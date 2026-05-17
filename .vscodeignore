@@ -1,0 +1,12 @@
+.vscode/**
+.vscode-test/**
+.gitignore
+.git/
+src/**
+node_modules/**
+tsconfig.json
+**/*.ts
+!out/**
+.trae/**
+项目方案.md
+README.md

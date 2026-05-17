@@ -1,0 +1,180 @@
+{
+  "name": "cursor-shield",
+  "displayName": "Cursor Shield",
+  "description": "企业级 Cursor 安全监控插件 - 账号监控、Git 审计、MCP/Skill 扫描、敏感信息检测、防绕过",
+  "version": "1.0.0",
+  "publisher": "cursor-shield",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cursor-shield/cursor-shield"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "security",
+    "cursor",
+    "monitoring",
+    "compliance",
+    "secret-detection"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursorSecurity.scanNow",
+        "title": "Cursor Shield: 立即扫描",
+        "icon": "$(search)"
+      },
+      {
+        "command": "cursorSecurity.exportLogs",
+        "title": "Cursor Shield: 导出日志",
+        "icon": "$(export)"
+      },
+      {
+        "command": "cursorSecurity.showDashboard",
+        "title": "Cursor Shield: 打开仪表盘",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "cursorSecurity.showHistory",
+        "title": "Cursor Shield: 查看历史",
+        "icon": "$(history)"
+      },
+      {
+        "command": "cursorSecurity.reloadConfig",
+        "title": "Cursor Shield: 重新加载配置",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cursorShield",
+          "title": "Cursor Shield",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "cursorShield": [
+        {
+          "id": "cursorShield.dashboard",
+          "name": "安全仪表盘",
+          "type": "webview"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Cursor Shield",
+      "properties": {
+        "cursorSecurity.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用或禁用安全监控"
+        },
+        "cursorSecurity.allowedEmailDomains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "允许的邮箱域名列表，如 [\"mycompany.com\"]"
+        },
+        "cursorSecurity.allowedRepos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "允许的 Git 仓库地址正则列表，如 [\"^https://github\\\\.com/myorg/.*\"]"
+        },
+        "cursorSecurity.blockedMCPs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "禁用的 MCP 服务名称列表"
+        },
+        "cursorSecurity.allowedSkills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "允许的 Skill 名称列表，为空则允许所有"
+        },
+        "cursorSecurity.sensitiveRules": {
+          "type": "string",
+          "enum": [
+            "built-in",
+            "custom",
+            "both"
+          ],
+          "default": "built-in",
+          "description": "敏感信息规则来源：built-in（内置）、custom（自定义）、both（两者）"
+        },
+        "cursorSecurity.customRulesPath": {
+          "type": "string",
+          "default": ".cursor-security-rules.toml",
+          "description": "自定义敏感信息规则文件路径"
+        },
+        "cursorSecurity.heartbeatEndpoint": {
+          "type": "string",
+          "default": "",
+          "description": "心跳上报端点 URL，为空则禁用心跳"
+        },
+        "cursorSecurity.blockCommitOnLeak": {
+          "type": "boolean",
+          "default": true,
+          "description": "检测到敏感信息时是否阻断提交"
+        },
+        "cursorSecurity.blockPushOnLeak": {
+          "type": "boolean",
+          "default": true,
+          "description": "检测到敏感信息时是否阻断推送"
+        },
+        "cursorSecurity.maxScanLines": {
+          "type": "number",
+          "default": 5000,
+          "description": "单文件最大扫描行数"
+        },
+        "cursorSecurity.entropyThreshold": {
+          "type": "number",
+          "default": 4.5,
+          "description": "高熵字符串检测阈值"
+        },
+        "cursorSecurity.autoRecoverEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否允许自动恢复安全配置"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "tsc -p ./ --noEmit",
+    "package": "npx vsce package"
+  },
+  "dependencies": {
+    "sql.js": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}

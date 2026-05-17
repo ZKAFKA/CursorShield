@@ -1,0 +1,49 @@
+{
+  "$schema": "https://cursor-shield/schemas/policy.json",
+  "version": "1.0.0",
+  "description": "Cursor Shield 企业安全策略模板 - 管理员可一键导入此文件配置安全策略",
+  "policies": {
+    "account": {
+      "allowedEmailDomains": [
+        "mycompany.com",
+        "mycompany.cn"
+      ]
+    },
+    "git": {
+      "allowedRepos": [
+        "^https://github\\.com/myorg/.*",
+        "^git@github\\.com:myorg/.*"
+      ],
+      "blockPushOnUnauthorizedRepo": true
+    },
+    "mcp": {
+      "blockedMCPs": [
+        "untrusted-mcp"
+      ],
+      "allowedSkills": [
+        "react-patterns",
+        "python-security"
+      ]
+    },
+    "sensitiveInfo": {
+      "rules": "both",
+      "customRulesPath": ".cursor-security-rules.toml",
+      "blockCommitOnLeak": true,
+      "blockPushOnLeak": true,
+      "clipboardMonitorEnabled": true,
+      "maxScanLines": 5000,
+      "entropyThreshold": 4.5
+    },
+    "heartbeat": {
+      "enabled": false,
+      "endpoint": "https://security.internal/heartbeat",
+      "intervalMinutes": 5
+    },
+    "selfProtection": {
+      "autoRecoverEnabled": true,
+      "antiDisableEnabled": true,
+      "antiUninstallEnabled": true,
+      "antiTamperEnabled": true
+    }
+  }
+}

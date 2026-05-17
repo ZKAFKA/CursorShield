@@ -1,0 +1,38 @@
+# Cursor Shield 自定义敏感信息规则
+# 在此文件中定义额外的检测规则，支持正则表达式
+
+[[rules]]
+id = "custom-jwt-token"
+description = "JWT Token"
+regex = "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"
+severity = "high"
+
+[[rules]]
+id = "custom-private-npm-token"
+description = "NPM Private Token"
+regex = "npm_[A-Za-z0-9]{36}"
+severity = "high"
+
+[[rules]]
+id = "custom-azure-storage-key"
+description = "Azure Storage Account Key"
+regex = "DefaultEndpointsProtocol=https;AccountName=[^;]+;AccountKey=[^;]+"
+severity = "critical"
+
+[[rules]]
+id = "custom-openai-api-key"
+description = "OpenAI API Key"
+regex = "sk-[A-Za-z0-9]{32,}"
+severity = "critical"
+
+[[rules]]
+id = "custom-anthropic-api-key"
+description = "Anthropic API Key"
+regex = "sk-ant-[A-Za-z0-9]{32,}"
+severity = "critical"
+
+[[rules]]
+id = "custom-wechat-appsecret"
+description = "WeChat AppSecret"
+regex = "[A-Za-z0-9]{32}"
+severity = "high"
