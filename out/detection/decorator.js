@@ -170,11 +170,17 @@ async function scanAndDecorate(document) {
         }
         (0, engine_2.setActiveEditorMatches)(fileName, matches);
         try {
+            vscode.commands.executeCommand('cursorSecurity._refreshStatusBar');
+        }
+        catch {
+            // command may not be registered yet
+        }
+        try {
             const { refreshDashboard } = await Promise.resolve().then(() => __importStar(require('../dashboard/webview')));
             refreshDashboard();
         }
-        catch {
-            // dashboard may not be loaded yet
+        catch (err) {
+            logger.warn(MODULE, `Dashboard refresh failed: ${err}`);
         }
     }
     catch (err) {
@@ -188,6 +194,13 @@ function clearDecorations(fileName) {
     if (editor && editor.document.fileName === fileName) {
         editor.setDecorations(decorationType, []);
         editor.setDecorations(hoverDecorationType, []);
+        (0, engine_2.clearActiveEditorMatches)();
+        try {
+            vscode.commands.executeCommand('cursorSecurity._refreshStatusBar');
+        }
+        catch {
+            // command may not be registered yet
+        }
     }
 }
 function clearAllDecorations() {

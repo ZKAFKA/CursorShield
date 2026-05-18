@@ -139,6 +139,29 @@ export function readRecentLogs(maxLines: number = 200): string[] {
     }
 }
 
+export function readAllLogs(): string[] {
+    ensureLogDir();
+
+    try {
+        const files = fs.readdirSync(LOG_DIR)
+            .filter(f => f.endsWith('.log'))
+            .sort();
+
+        const allLines: string[] = [];
+
+        for (const file of files) {
+            const filePath = path.join(LOG_DIR, file);
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const lines = content.trim().split('\n').filter(l => l.length > 0);
+            allLines.push(...lines);
+        }
+
+        return allLines;
+    } catch {
+        return [];
+    }
+}
+
 export function close(): void {
     if (logStream) {
         logStream.end();

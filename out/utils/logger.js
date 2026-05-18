@@ -40,6 +40,7 @@ exports.error = error;
 exports.cleanupExpiredLogs = cleanupExpiredLogs;
 exports.getLogDir = getLogDir;
 exports.readRecentLogs = readRecentLogs;
+exports.readAllLogs = readAllLogs;
 exports.close = close;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -149,6 +150,25 @@ function readRecentLogs(maxLines = 200) {
         const content = fs.readFileSync(logPath, 'utf-8');
         const lines = content.trim().split('\n');
         return lines.slice(-maxLines);
+    }
+    catch {
+        return [];
+    }
+}
+function readAllLogs() {
+    ensureLogDir();
+    try {
+        const files = fs.readdirSync(LOG_DIR)
+            .filter(f => f.endsWith('.log'))
+            .sort();
+        const allLines = [];
+        for (const file of files) {
+            const filePath = path.join(LOG_DIR, file);
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const lines = content.trim().split('\n').filter(l => l.length > 0);
+            allLines.push(...lines);
+        }
+        return allLines;
     }
     catch {
         return [];

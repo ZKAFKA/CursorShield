@@ -15,13 +15,10 @@ interface DashboardData {
     scanSummary: ScanSummary | null;
     leakDetected: boolean;
     lastLeakCount: number;
-    selfProtectionEnabled: boolean;
     activeEditor: ActiveEditorStats;
 }
 
 function collectDashboardData(): DashboardData {
-    const config = vscode.workspace.getConfiguration('cursorSecurity');
-
     return {
         account: getAccountStatus(),
         git: getGitStatus(),
@@ -29,7 +26,6 @@ function collectDashboardData(): DashboardData {
         scanSummary: getLastScanSummary(),
         leakDetected: hasLeakDetected(),
         lastLeakCount: getLastLeakMatches().length,
-        selfProtectionEnabled: config.get<boolean>('autoRecoverEnabled', true),
         activeEditor: getActiveEditorStats()
     };
 }
@@ -253,6 +249,111 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
         .stat-high { color: var(--warning-color); }
         .stat-total { color: var(--info-color); }
 
+        .scan-stat.clickable {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .scan-stat.clickable:hover {
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .detail-back-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .detail-back-btn:hover {
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        .detail-count {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .detail-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 8px;
+            font-size: 12px;
+            border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .detail-item:hover {
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-severity {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .sev-critical { background: rgba(255,0,0,0.12); color: var(--error-color); }
+        .sev-high { background: rgba(255,180,0,0.12); color: var(--warning-color); }
+        .sev-medium { background: rgba(80,140,255,0.12); color: var(--info-color); }
+        .sev-low { background: rgba(128,128,128,0.12); color: var(--text-secondary); }
+
+        .detail-file {
+            flex: 1;
+            font-family: var(--vscode-editor-font-family);
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .detail-line {
+            font-size: 10px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .detail-masked {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: var(--vscode-editor-font-family);
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .detail-hint {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            text-align: center;
+        }
+
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -371,24 +472,9 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <span class="card-icon">🔒</span>
-            <span class="card-title">防护状态</span>
-            <span id="protectionBadge" class="card-badge badge-compliant">已启用</span>
-        </div>
-        <div id="protectionContent">
-            <div class="info-row">
-                <span class="info-label">自保护</span>
-                <span id="selfProtection" class="info-value">已启用</span>
-            </div>
-        </div>
-    </div>
-
     <div class="actions">
-        <button class="btn btn-primary" onclick="scanNow()">🔍 立即扫描</button>
-        <button class="btn btn-secondary" onclick="exportLogs()">📥 导出日志</button>
-        <button class="btn btn-secondary" onclick="viewHistory()">📋 查看历史</button>
+        <button id="scanBtn" class="btn btn-primary">🔍 立即扫描</button>
+        <button id="exportBtn" class="btn btn-secondary">📥 导出日志</button>
     </div>
 
     <div class="footer">
@@ -397,8 +483,23 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
+        let isScanning = false;
 
         function scanNow() {
+            if (isScanning) { return; }
+            isScanning = true;
+            const btn = document.getElementById('scanBtn');
+            if (btn) {
+                btn.textContent = '⏳ 扫描中...';
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            }
+            const badge = document.getElementById('scanBadge');
+            if (badge) {
+                badge.className = 'card-badge badge-info';
+                badge.textContent = '扫描中...';
+            }
             vscode.postMessage({ command: 'scanNow' });
         }
 
@@ -406,17 +507,22 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
             vscode.postMessage({ command: 'exportLogs' });
         }
 
-        function viewHistory() {
-            vscode.postMessage({ command: 'showHistory' });
-        }
-
-        function showDetail(type) {
-            vscode.postMessage({ command: 'showDetail', type: type });
-        }
+        document.getElementById('scanBtn').addEventListener('click', scanNow);
+        document.getElementById('exportBtn').addEventListener('click', exportLogs);
 
         window.addEventListener('message', event => {
             const data = event.data;
             if (data.type === 'update') {
+                updateDashboard(data.payload);
+            } else if (data.type === 'scanComplete') {
+                isScanning = false;
+                const btn = document.getElementById('scanBtn');
+                if (btn) {
+                    btn.textContent = '🔍 立即扫描';
+                    btn.disabled = false;
+                    btn.style.opacity = '';
+                    btn.style.cursor = '';
+                }
                 updateDashboard(data.payload);
             }
         });
@@ -426,7 +532,6 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
             updateGit(d.git);
             updateMCPSkill(d.mcpSkill);
             updateScan(d.scanSummary, d.leakDetected, d.lastLeakCount, d.activeEditor);
-            updateProtection(d);
             updateStatusBadge(d);
         }
 
@@ -533,6 +638,9 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
             content.innerHTML = html;
         }
 
+        let scanData = null;
+        let showDetail = false;
+
         function updateScan(summary, leakDetected, lastLeakCount, activeEditor) {
             const badge = document.getElementById('scanBadge');
             const content = document.getElementById('scanContent');
@@ -541,6 +649,13 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
             const activeCount = hasActiveMatches ? activeEditor.matchCount : 0;
             const activeCritical = hasActiveMatches ? activeEditor.criticalCount : 0;
             const activeHigh = hasActiveMatches ? activeEditor.highCount : 0;
+
+            scanData = summary;
+
+            if (showDetail && summary && summary.matches.length > 0) {
+                renderDetailView(summary.matches);
+                return;
+            }
 
             if (leakDetected && lastLeakCount > 0) {
                 badge.className = 'card-badge badge-error';
@@ -561,14 +676,17 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
                 const critical = summary.matchesBySeverity['critical'] || 0;
                 const high = summary.matchesBySeverity['high'] || 0;
                 const total = summary.totalMatches;
+                const canClick = total > 0;
 
                 content.innerHTML =
                     '<div class="scan-stats">' +
-                    '<div class="scan-stat"><div class="scan-stat-value stat-critical">' + critical + '</div><div class="scan-stat-label">Critical</div></div>' +
-                    '<div class="scan-stat"><div class="scan-stat-value stat-high">' + high + '</div><div class="scan-stat-label">High</div></div>' +
-                    '<div class="scan-stat"><div class="scan-stat-value stat-total">' + total + '</div><div class="scan-stat-label">总计</div></div>' +
-                    '</div>' +
-                    '<div class="info-row" style="margin-top:8px"><span class="info-label">扫描耗时</span><span class="info-value">' + (summary.duration / 1000).toFixed(1) + 's</span></div>';
+                    '<div class="scan-stat' + (canClick && critical > 0 ? ' clickable' : '') + '" data-action="showDetail"' +
+                    '><div class="scan-stat-value stat-critical">' + critical + '</div><div class="scan-stat-label">Critical</div></div>' +
+                    '<div class="scan-stat' + (canClick && high > 0 ? ' clickable' : '') + '" data-action="showDetail"' +
+                    '><div class="scan-stat-value stat-high">' + high + '</div><div class="scan-stat-label">High</div></div>' +
+                    '<div class="scan-stat' + (canClick ? ' clickable' : '') + '" data-action="showDetail"' +
+                    '><div class="scan-stat-value stat-total">' + total + '</div><div class="scan-stat-label">总计</div></div>' +
+                    '</div>';
             } else if (leakDetected && lastLeakCount > 0) {
                 content.innerHTML =
                     '<div class="info-row"><span class="info-label">上次拦截</span><span class="info-value" style="color:var(--error-color)">' + lastLeakCount + ' 处敏感信息</span></div>' +
@@ -586,18 +704,67 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
             }
         }
 
-        function updateProtection(d) {
-            const selfProt = document.getElementById('selfProtection');
-            const badge = document.getElementById('protectionBadge');
+        function renderDetailView(matches) {
+            showDetail = true;
+            const badge = document.getElementById('scanBadge');
+            const content = document.getElementById('scanContent');
 
-            if (d.selfProtectionEnabled) {
+            badge.className = 'card-badge badge-warning';
+            badge.textContent = matches.length + ' 处';
+
+            const displayMatches = matches.slice(0, 200);
+            let html = '<div class="detail-header">' +
+                '<button class="detail-back-btn">← 返回</button>' +
+                '<span class="detail-count">共 ' + matches.length + ' 处' + (matches.length > 200 ? '（显示前200条）' : '') + '</span>' +
+                '</div>' +
+                '<div class="detail-list">';
+
+            for (let i = 0; i < displayMatches.length; i++) {
+                const m = displayMatches[i];
+                const sevClass = 'sev-' + m.rule.severity;
+                const shortFile = m.file.replace(/^.*[\\/]/, '');
+                html += '<div class="detail-item" data-file="' + escAttr(m.file) + '" data-line="' + m.line + '">' +
+                    '<span class="detail-severity ' + sevClass + '">' + m.rule.severity + '</span>' +
+                    '<span class="detail-file" title="' + escAttr(m.file) + '">' + esc(shortFile) + '</span>' +
+                    '<span class="detail-line">L' + m.line + '</span>' +
+                    '<span class="detail-masked" title="' + escAttr(m.rule.description) + '">' + esc(m.masked) + '</span>' +
+                    '</div>';
+            }
+
+            html += '</div><div class="detail-hint">点击条目可跳转至源码位置</div>';
+            content.innerHTML = html;
+        }
+
+        function backToOverview() {
+            showDetail = false;
+            const content = document.getElementById('scanContent');
+            const badge = document.getElementById('scanBadge');
+
+            if (scanData && scanData.totalMatches > 0) {
+                const critical = scanData.matchesBySeverity['critical'] || 0;
+                const high = scanData.matchesBySeverity['high'] || 0;
+                const total = scanData.totalMatches;
+
+                badge.className = 'card-badge badge-warning';
+                badge.textContent = '⚠️ ' + total + ' 处';
+
+                content.innerHTML =
+                    '<div class="scan-stats">' +
+                    '<div class="scan-stat clickable" data-action="showDetail">' +
+                    '<div class="scan-stat-value stat-critical">' + critical + '</div><div class="scan-stat-label">Critical</div></div>' +
+                    '<div class="scan-stat clickable" data-action="showDetail">' +
+                    '<div class="scan-stat-value stat-high">' + high + '</div><div class="scan-stat-label">High</div></div>' +
+                    '<div class="scan-stat clickable" data-action="showDetail">' +
+                    '<div class="scan-stat-value stat-total">' + total + '</div><div class="scan-stat-label">总计</div></div>' +
+                    '</div>';
+            } else if (scanData) {
                 badge.className = 'card-badge badge-compliant';
-                badge.textContent = '✅ 已启用';
-                selfProt.innerHTML = '<span style="color:var(--success-color)">✅ 已启用</span>';
+                badge.textContent = '✅ 安全';
+                content.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛡️</div><div>未发现敏感信息</div></div>';
             } else {
-                badge.className = 'card-badge badge-error';
-                badge.textContent = '⚠️ 部分禁用';
-                selfProt.innerHTML = '<span style="color:var(--error-color)">⚠️ 已禁用</span>';
+                badge.className = 'card-badge badge-info';
+                badge.textContent = '就绪';
+                content.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛡️</div><div>尚未执行扫描</div></div>';
             }
         }
 
@@ -630,6 +797,39 @@ function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): stri
                 .replace(/'/g, '&#39;');
         }
 
+        function escAttr(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;');
+        }
+
+        document.getElementById('scanContent').addEventListener('click', function(e) {
+            const stat = e.target.closest('.scan-stat.clickable');
+            if (stat) {
+                if (scanData && scanData.matches && scanData.matches.length > 0) {
+                    renderDetailView(scanData.matches);
+                }
+                return;
+            }
+
+            const backBtn = e.target.closest('.detail-back-btn');
+            if (backBtn) {
+                backToOverview();
+                return;
+            }
+
+            const detailItem = e.target.closest('.detail-item');
+            if (detailItem) {
+                const file = detailItem.getAttribute('data-file');
+                const line = parseInt(detailItem.getAttribute('data-line') || '1', 10);
+                if (file) {
+                    vscode.postMessage({ command: 'navigateTo', file: file, line: line });
+                }
+                return;
+            }
+        });
+
         vscode.postMessage({ command: 'ready' });
     </script>
 </body>
@@ -643,6 +843,11 @@ function getNonce(): string {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
+}
+
+function navigateToMatch(filePath: string, line: number): void {
+    const uri = vscode.Uri.file(filePath);
+    vscode.window.showTextDocument(uri, { selection: new vscode.Range(line - 1, 0, line - 1, 999) });
 }
 
 export class DashboardViewProvider implements vscode.WebviewViewProvider {
@@ -676,11 +881,8 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
                 case 'exportLogs':
                     vscode.commands.executeCommand('cursorSecurity.exportLogs');
                     break;
-                case 'showHistory':
-                    vscode.commands.executeCommand('cursorSecurity.showHistory');
-                    break;
-                case 'showDetail':
-                    vscode.commands.executeCommand('cursorSecurity.showDashboard');
+                case 'navigateTo':
+                    navigateToMatch(message.file, message.line);
                     break;
             }
         });
@@ -705,6 +907,22 @@ export class DashboardViewProvider implements vscode.WebviewViewProvider {
             });
         } catch (err) {
             logger.error(MODULE, `Dashboard refresh failed: ${err}`);
+        }
+    }
+
+    public notifyScanComplete(): void {
+        if (!this._view) {
+            return;
+        }
+
+        try {
+            const data = collectDashboardData();
+            this._view.webview.postMessage({
+                type: 'scanComplete',
+                payload: data
+            });
+        } catch (err) {
+            logger.error(MODULE, `ScanComplete notify failed: ${err}`);
         }
     }
 }

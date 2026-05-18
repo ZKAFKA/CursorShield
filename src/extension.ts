@@ -10,8 +10,8 @@ import { registerDecorator } from './detection/decorator';
 import { registerPreCommitHooks } from './detection/preCommit';
 import { registerAntiTamper } from './protection/antiTamper';
 import { registerHeartbeat } from './protection/heartbeat';
-import { registerDashboard, refreshDashboard } from './dashboard/webview';
-import { scanWorkspace, getLastScanSummary, clearScanCache } from './detection/engine';
+import { registerDashboard, refreshDashboard, getDashboardProvider } from './dashboard/webview';
+import { scanWorkspace, getLastScanSummary, clearScanCache, getActiveEditorStats } from './detection/engine';
 import { getLastLeakMatches, hasLeakDetected } from './detection/preCommit';
 
 const MODULE = 'Extension';
@@ -105,8 +105,46 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(leakCheckListener);
 
+    const editorSwitchListener = vscode.window.onDidChangeActiveTextEditor(editor => {
+        if (editor && editor.document.uri.scheme === 'file') {
+            updateLeakStatusBar();
+        }
+    });
+    context.subscriptions.push(editorSwitchListener);
+
+    let editorChangeTimer: NodeJS.Timeout | null = null;
+    const editorChangeListener = vscode.workspace.onDidChangeTextDocument(e => {
+        if (e.document.uri.scheme !== 'file') {
+            return;
+        }
+        if (editorChangeTimer) {
+            clearTimeout(editorChangeTimer);
+        }
+        editorChangeTimer = setTimeout(() => {
+            updateLeakStatusBar();
+        }, 800);
+    });
+    context.subscriptions.push(editorChangeListener);
+    context.subscriptions.push({ dispose: () => { if (editorChangeTimer) { clearTimeout(editorChangeTimer); } } });
+
     updateLeakStatusBar();
     refreshDashboard();
+
+    (async () => {
+        try {
+            clearScanCache();
+            const summary = await scanWorkspace();
+            updateLeakStatusBar();
+            refreshDashboard();
+            const provider = getDashboardProvider();
+            if (provider) {
+                provider.notifyScanComplete();
+            }
+            logger.info(MODULE, `Auto-scan complete: ${summary.totalMatches} matches`);
+        } catch (err) {
+            logger.error(MODULE, `Auto-scan failed: ${err}`);
+        }
+    })();
 
     logger.info(MODULE, '========================================');
     logger.info(MODULE, 'Cursor Shield activated successfully');
@@ -129,6 +167,7 @@ function updateLeakStatusBar(): void {
     const hasLeak = hasLeakDetected();
     const leakMatches = getLastLeakMatches();
     const scanSummary = getLastScanSummary();
+    const activeStats = getActiveEditorStats();
 
     if (hasLeak && leakMatches.length > 0) {
         leakStatusBarItem.text = `$(error) Leaks:${leakMatches.length}`;
@@ -138,6 +177,10 @@ function updateLeakStatusBar(): void {
         leakStatusBarItem.text = `$(warning) Leaks:${scanSummary.totalMatches}`;
         leakStatusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         leakStatusBarItem.tooltip = `最近扫描发现 ${scanSummary.totalMatches} 处敏感信息`;
+    } else if (activeStats.matchCount > 0) {
+        leakStatusBarItem.text = `$(warning) Leaks:${activeStats.matchCount}`;
+        leakStatusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+        leakStatusBarItem.tooltip = `当前文件检测到 ${activeStats.matchCount} 处敏感信息 (Critical: ${activeStats.criticalCount}, High: ${activeStats.highCount})`;
     } else {
         leakStatusBarItem.text = '$(shield) Leaks:0';
         leakStatusBarItem.backgroundColor = undefined;
@@ -146,6 +189,12 @@ function updateLeakStatusBar(): void {
 }
 
 function registerCommands(context: vscode.ExtensionContext): void {
+    context.subscriptions.push(
+        vscode.commands.registerCommand('cursorSecurity._refreshStatusBar', () => {
+            updateLeakStatusBar();
+        })
+    );
+
     context.subscriptions.push(
         vscode.commands.registerCommand('cursorSecurity.scanNow', async () => {
             logger.info(MODULE, 'Manual scan triggered');
@@ -166,27 +215,23 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 updateLeakStatusBar();
                 refreshDashboard();
 
+                const provider = getDashboardProvider();
+                if (provider) {
+                    provider.notifyScanComplete();
+                }
+
                 if (summary.totalMatches === 0) {
                     vscode.window.showInformationMessage(
-                        `[Cursor Shield] 扫描完成：未发现敏感信息 ✅ (${(summary.duration / 1000).toFixed(1)}s)`
+                        `[Cursor Shield] ✅ 未发现敏感信息`
                     );
                 } else {
                     const critical = summary.matchesBySeverity['critical'] || 0;
                     const high = summary.matchesBySeverity['high'] || 0;
 
-                    const items = summary.matches.slice(0, 5).map(m =>
-                        `  ${m.file}:${m.line} - [${m.rule.severity}] ${m.rule.description}: ${m.masked}`
-                    );
-
-                    const msg = [
-                        `[Cursor Shield] 扫描完成：发现 ${summary.totalMatches} 处敏感信息 ⚠️`,
-                        `  🔴 Critical: ${critical}`,
-                        `  🟠 High: ${high}`,
-                        ...items,
-                        summary.totalMatches > 5 ? `  ... 还有 ${summary.totalMatches - 5} 处` : ''
-                    ].join('\n');
-
-                    vscode.window.showWarningMessage(msg, '查看详情', '我知道了').then(choice => {
+                    vscode.window.showWarningMessage(
+                        `[Cursor Shield] ⚠️ ${summary.totalMatches} 处敏感信息 (Critical: ${critical} / High: ${high})`,
+                        '查看详情'
+                    ).then(choice => {
                         if (choice === '查看详情') {
                             vscode.commands.executeCommand('cursorSecurity.showDashboard');
                         }
@@ -198,15 +243,16 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('cursorSecurity.exportLogs', async () => {
-            const recentLogs = logger.readRecentLogs(500);
+            const allLogs = logger.readAllLogs();
 
-            if (recentLogs.length === 0) {
+            if (allLogs.length === 0) {
                 vscode.window.showInformationMessage('[Cursor Shield] 暂无日志可导出');
                 return;
             }
 
+            const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
             const defaultUri = vscode.Uri.file(
-                path.join(logger.getLogDir(), `export-${new Date().toISOString().replace(/:/g, '-')}.log`)
+                path.join(logger.getLogDir(), `cursor-shield-export-${timestamp}.log`)
             );
 
             const uri = await vscode.window.showSaveDialog({
@@ -214,13 +260,64 @@ function registerCommands(context: vscode.ExtensionContext): void {
                 filters: { 'Log Files': ['log'], 'All Files': ['*'] }
             });
 
-            if (uri) {
-                fs.writeFileSync(uri.fsPath, recentLogs.join('\n'), 'utf-8');
-                vscode.window.showInformationMessage(
-                    `[Cursor Shield] 日志已导出：${uri.fsPath} (${recentLogs.length} 条)`
-                );
-                logger.info(MODULE, `Logs exported to: ${uri.fsPath}`);
+            if (!uri) {
+                return;
             }
+
+            const scanSummary = getLastScanSummary();
+            const leakMatches = getLastLeakMatches();
+            const hasLeak = hasLeakDetected();
+            const activeStats = getActiveEditorStats();
+
+            const header = [
+                '======================================================================',
+                '  Cursor Shield - 日志导出',
+                '======================================================================',
+                `  导出时间 : ${new Date().toLocaleString('zh-CN')}`,
+                `  日志条数 : ${allLogs.length}`,
+                '',
+                '--- 检测摘要 ---',
+            ];
+
+            if (scanSummary) {
+                header.push(`  最近扫描 : ${scanSummary.totalMatches} 处匹配 (扫描 ${scanSummary.scannedFiles} 个文件, 耗时 ${(scanSummary.duration / 1000).toFixed(1)}s)`);
+                const sev = scanSummary.matchesBySeverity;
+                header.push(`  严重程度 : critical=${sev['critical'] || 0}, high=${sev['high'] || 0}, medium=${sev['medium'] || 0}, low=${sev['low'] || 0}`);
+                if (scanSummary.matches.length > 0) {
+                    header.push('  匹配详情 :');
+                    for (const m of scanSummary.matches.slice(0, 50)) {
+                        header.push(`    [${m.rule.severity}] ${m.file}:${m.line}:${m.column} - ${m.rule.id} - ${m.masked}`);
+                    }
+                    if (scanSummary.matches.length > 50) {
+                        header.push(`    ... 还有 ${scanSummary.matches.length - 50} 处`);
+                    }
+                }
+            } else {
+                header.push('  最近扫描 : 尚未执行');
+            }
+
+            if (hasLeak) {
+                header.push(`  阻断记录 : ${leakMatches.length} 处`);
+                for (const m of leakMatches.slice(0, 20)) {
+                    header.push(`    [${m.rule.severity}] ${m.file}:${m.line}:${m.column} - ${m.rule.id} - ${m.masked}`);
+                }
+            }
+
+            if (activeStats.matchCount > 0) {
+                header.push(`  当前文件 : ${activeStats.fileName} (${activeStats.matchCount} 处, critical=${activeStats.criticalCount}, high=${activeStats.highCount})`);
+            }
+
+            header.push('');
+            header.push('======================================================================');
+            header.push('');
+
+            const content = header.join('\n') + allLogs.join('\n');
+
+            fs.writeFileSync(uri.fsPath, content, 'utf-8');
+            vscode.window.showInformationMessage(
+                `[Cursor Shield] 日志已导出：${uri.fsPath} (${allLogs.length} 条)`
+            );
+            logger.info(MODULE, `Logs exported to: ${uri.fsPath}`);
         })
     );
 
@@ -228,70 +325,6 @@ function registerCommands(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand('cursorSecurity.showDashboard', () => {
             vscode.commands.executeCommand('workbench.view.extension.cursorShield');
             refreshDashboard();
-        })
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('cursorSecurity.showHistory', async () => {
-            const panel = vscode.window.createWebviewPanel(
-                'cursorShieldHistory',
-                'Cursor Shield - 扫描历史',
-                vscode.ViewColumn.One,
-                { enableScripts: true }
-            );
-
-            const scanSummary = getLastScanSummary();
-            const leakMatches = getLastLeakMatches();
-            const hasLeak = hasLeakDetected();
-            const recentLogs = logger.readRecentLogs(100);
-
-            const summaryHtml = scanSummary
-                ? `<h3>最近扫描结果</h3>
-                   <p>时间：${new Date(Date.now() - scanSummary.duration).toLocaleString('zh-CN')}</p>
-                   <p>文件数：${scanSummary.scannedFiles} | 匹配数：${scanSummary.totalMatches}</p>
-                   <p>耗时：${(scanSummary.duration / 1000).toFixed(1)}s</p>
-                   <h4>按严重程度：</h4>
-                   <ul>
-                     ${Object.entries(scanSummary.matchesBySeverity).map(([sev, count]) =>
-                       `<li>${sev}: ${count}</li>`
-                     ).join('')}
-                   </ul>
-                   ${scanSummary.matches.length > 0 ? '<h4>匹配详情（前 20 条）：</h4><pre>' +
-                     scanSummary.matches.slice(0, 20).map(m =>
-                       `[${m.rule.severity}] ${m.file}:${m.line}:${m.column} - ${m.rule.description} - ${m.masked}`
-                     ).join('\n') + '</pre>' : ''}`
-                : '<p>尚未执行全量扫描</p>';
-
-            const leakHtml = hasLeak
-                ? `<h3>上次阻断记录</h3>
-                   <p>拦截时间：${new Date().toLocaleString('zh-CN')}</p>
-                   <p>匹配数：${leakMatches.length}</p>
-                   <pre>${leakMatches.slice(0, 10).map(m =>
-                     `[${m.rule.severity}] ${m.file}:${m.line}:${m.column} - ${m.masked}`
-                   ).join('\n')}</pre>`
-                : '<p>无阻断记录</p>';
-
-            const logHtml = `<h3>最近日志</h3><pre>${recentLogs.join('\n')}</pre>`;
-
-            panel.webview.html = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head><meta charset="UTF-8"><title>扫描历史</title>
-<style>
-  body { font-family: var(--vscode-font-family); color: var(--vscode-foreground);
-         background: var(--vscode-editor-background); padding: 20px; }
-  h2 { border-bottom: 1px solid var(--vscode-widget-border); padding-bottom: 8px; }
-  h3 { margin-top: 20px; color: var(--vscode-textLink-foreground); }
-  h4 { margin-bottom: 4px; }
-  pre { background: var(--vscode-textCodeBlock-background); padding: 12px;
-        border-radius: 6px; overflow-x: auto; font-size: 12px; line-height: 1.6; }
-  ul { padding-left: 20px; }
-</style></head>
-<body>
-  <h2>📋 Cursor Shield - 扫描历史</h2>
-  ${summaryHtml}
-  ${leakHtml}
-  ${logHtml}
-</body></html>`;
         })
     );
 

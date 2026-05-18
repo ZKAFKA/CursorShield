@@ -4,6 +4,35 @@
 
 ***
 
+## 🚀 当前进展
+
+### V1.0 客户端侧（已完成）
+
+- [x] ~~项目脚手架搭建（package.json、tsconfig.json、构建脚本）~~
+- [x] ~~账号监控模块（邮箱读取、域名校验、合规判断）~~
+- [x] ~~账号变动监测（登录/登出/切换检测，authStateHash 双重机制）~~
+- [x] ~~Git 远程仓库监控（三层降级检测、远程变更实时监控、推送拦截）~~
+- [x] ~~终端命令监控（可疑 Git 命令、敏感环境变量、凭证操作）~~
+- [x] ~~MCP / Skill 扫描（自动发现、合规校验、文件变更监听）~~
+- [x] ~~敏感信息检测引擎（26 条内置规则 + 熵检测 + 自定义规则）~~
+- [x] ~~编辑器实时装饰器（红色波浪线 + 悬停卡片）~~
+- [x] ~~保存/暂存/提交拦截（模态弹窗阻断）~~
+- [x] ~~防绕过机制（禁用/卸载监控、配置防篡改、文件完整性、自动恢复）~~
+- [x] ~~心跳上报模块（HTTP/HTTPS POST，可配置端点）~~
+- [x] ~~仪表盘 UI（侧边栏 Webview，5 张状态卡片 + 操作按钮）~~
+- [x] ~~全模块整合到 extension.ts 主入口~~
+
+### V2.0 服务端（计划中）
+
+- [ ] 服务器 Web 端建设
+- [ ] 接收并展示客户端告警信息
+- [ ] 远程配置管理（白名单/规则下发）
+- [ ] 多客户端统一监控面板
+- [ ] 告警通知（邮件/IM 推送）
+- [ ] 审计日志持久化与查询
+
+***
+
 ## 📋 目录
 
 - [核心能力](#-核心能力)
@@ -30,7 +59,7 @@
 | **账号监控**           | 读取 Cursor 登录邮箱，校验域名是否在企业白名单内                        |
 | **Git 审计**         | 实时监控远程仓库变更、推送拦截、终端可疑命令检测                            |
 | **MCP / Skill 扫描** | 自动发现并校验 `.cursor/mcp.json` 和 `.cursor/skills/` 中的扩展 |
-| **敏感信息检测**         | 26 条内置规则 + 熵检测，覆盖编辑器实时标注、保存拦截、提交拦截、剪贴板监控            |
+| **敏感信息检测**         | 26 条内置规则 + 熵检测，覆盖编辑器实时标注、保存拦截、提交拦截              |
 | **防绕过机制**          | 禁用/卸载/配置篡改自动恢复，心跳上报                                 |
 
 ***
@@ -135,7 +164,6 @@
 | 文件保存拦截  | `onDidSaveTextDocument`             | critical 匹配弹窗      |
 | 暂存前拦截   | `cursorSecurity.checkBeforeStage`   | 模态弹窗阻断             |
 | 提交前拦截   | `cursorSecurity.checkBeforeCommit`  | 模态弹窗阻断             |
-| 剪贴板监控   | 2s 轮询 `clipboard.readText()`        | critical 匹配弹窗（仅告警） |
 | 全量工作区扫描 | `cursorSecurity.scanNow` 命令         | 进度通知 + 结果统计        |
 
 #### 检测引擎
@@ -180,11 +208,11 @@
 
 | 卡片          | 内容                        |
 | ----------- | ------------------------- |
-| 账号信息        | 邮箱、域名、合规状态                |
-| Git 仓库      | 远程地址、合规状态                 |
+| 账号信息        | 邮箱、合规状态                  |
+| Git 仓库      | 远程地址、合规状态（Allowed/Denied） |
 | MCP / Skill | 列表（名称 + 类型标签 + 授权状态）      |
 | 敏感信息扫描      | Critical / High / 总计 三栏统计 |
-| 防护状态        | 自保护、心跳、剪贴板监控              |
+| 防护状态        | 自保护启用状态                    |
 | 操作按钮        | 立即扫描 / 导出日志 / 查看历史        |
 
 ***
@@ -227,7 +255,6 @@ cursor --install-extension cursor-shield-1.0.0.vsix
 | `cursorSecurity.heartbeatEndpoint`       | string    | `""`                            | 心跳上报端点 URL，为空则禁用                                        |
 | `cursorSecurity.blockCommitOnLeak`       | boolean   | `true`                          | 检测到敏感信息时是否阻断提交                                          |
 | `cursorSecurity.blockPushOnLeak`         | boolean   | `true`                          | 检测到未授权仓库时是否阻断推送                                         |
-| `cursorSecurity.clipboardMonitorEnabled` | boolean   | `true`                          | 启用剪贴板监控                                                 |
 | `cursorSecurity.maxScanLines`            | number    | `5000`                          | 单文件最大扫描行数                                               |
 | `cursorSecurity.entropyThreshold`        | number    | `4.5`                           | 高熵字符串检测阈值                                               |
 | `cursorSecurity.autoRecoverEnabled`      | boolean   | `true`                          | 是否允许自动恢复安全配置                                            |
@@ -352,7 +379,7 @@ src/
 │   ├── entropy.ts            # 香农熵检测
 │   ├── engine.ts             # 扫描引擎（正则 + 熵综合）
 │   ├── decorator.ts          # 编辑器实时装饰器
-│   └── preCommit.ts          # 保存/暂存/提交拦截 + 剪贴板监控
+│   └── preCommit.ts          # 保存/暂存/提交拦截
 ├── dashboard/
 │   └── webview.ts            # 侧边栏仪表盘
 ├── protection/

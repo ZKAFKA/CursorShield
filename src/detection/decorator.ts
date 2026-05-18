@@ -183,10 +183,16 @@ async function scanAndDecorate(document: vscode.TextDocument): Promise<void> {
         setActiveEditorMatches(fileName, matches);
 
         try {
+            vscode.commands.executeCommand('cursorSecurity._refreshStatusBar');
+        } catch {
+            // command may not be registered yet
+        }
+
+        try {
             const { refreshDashboard } = await import('../dashboard/webview');
             refreshDashboard();
-        } catch {
-            // dashboard may not be loaded yet
+        } catch (err) {
+            logger.warn(MODULE, `Dashboard refresh failed: ${err}`);
         }
     } catch (err) {
         logger.error(MODULE, `Decorator scan failed: ${err}`);
@@ -201,6 +207,12 @@ function clearDecorations(fileName: string): void {
     if (editor && editor.document.fileName === fileName) {
         editor.setDecorations(decorationType, []);
         editor.setDecorations(hoverDecorationType, []);
+        clearActiveEditorMatches();
+        try {
+            vscode.commands.executeCommand('cursorSecurity._refreshStatusBar');
+        } catch {
+            // command may not be registered yet
+        }
     }
 }
 
