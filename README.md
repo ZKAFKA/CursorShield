@@ -1,6 +1,8 @@
 # Cursor Shield — 企业级 Cursor 安全监控插件
 
-> 一款不可绕过的 VS Code / Cursor 企业级安全扩展，覆盖账号监控、Git 审计、MCP/Skill 扫描、敏感信息检测和防绕过机制五大核心能力。帮助企业管理员工安全使用AI开发工具。
+> 一款针对企业使用 Cursor AI开发场景下的安全管理插件，通过客户端监控和管理台下发实现对员工AI使用的安全防护。覆盖账号监控、Git 审计、MCP/Skill 扫描、敏感信息检测和防绕过机制五大核心能力。  
+>
+> A security management plugin for enterprise use of Cursor AI in development scenarios, providing security protection for employees' AI usage through client monitoring and management console deployment. It covers five core capabilities: account monitoring
 
 ***
 
@@ -8,27 +10,13 @@
 
 ### V1.0 客户端侧（已完成）
 
-- [x] ~~项目脚手架搭建（package.json、tsconfig.json、构建脚本）~~
-- [x] ~~账号监控模块（邮箱读取、域名校验、合规判断）~~
-- [x] ~~账号变动监测（登录/登出/切换检测，authStateHash 双重机制）~~
-- [x] ~~Git 远程仓库监控（三层降级检测、远程变更实时监控、推送拦截）~~
-- [x] ~~终端命令监控（可疑 Git 命令、敏感环境变量、凭证操作）~~
-- [x] ~~MCP / Skill 扫描（自动发现、合规校验、文件变更监听）~~
-- [x] ~~敏感信息检测引擎（26 条内置规则 + 熵检测 + 自定义规则）~~
-- [x] ~~编辑器实时装饰器（红色波浪线 + 悬停卡片）~~
-- [x] ~~保存/暂存/提交拦截（模态弹窗阻断）~~
-- [x] ~~防绕过机制（禁用/卸载监控、配置防篡改、文件完整性、自动恢复）~~
-- [x] ~~心跳上报模块（HTTP/HTTPS POST，可配置端点）~~
-- [x] ~~仪表盘 UI（侧边栏 Webview，5 张状态卡片 + 操作按钮）~~
-- [x] ~~全模块整合到 extension.ts 主入口~~
+- [x] ~~客户端监控功能搭建~~
 
 ### V2.0 服务端（计划中）
 
 - [ ] 服务器 Web 端建设
 - [ ] 接收并展示客户端告警信息
 - [ ] 远程配置管理（白名单/规则下发）
-- [ ] 多客户端统一监控面板
-- [ ] 告警通知（邮件/IM 推送）
 - [ ] 审计日志持久化与查询
 
 ***
@@ -59,7 +47,7 @@
 | **账号监控**           | 读取 Cursor 登录邮箱，校验域名是否在企业白名单内                        |
 | **Git 审计**         | 实时监控远程仓库变更、推送拦截、终端可疑命令检测                            |
 | **MCP / Skill 扫描** | 自动发现并校验 `.cursor/mcp.json` 和 `.cursor/skills/` 中的扩展 |
-| **敏感信息检测**         | 26 条内置规则 + 熵检测，覆盖编辑器实时标注、保存拦截、提交拦截              |
+| **敏感信息检测**         | 26 条内置规则 + 熵检测，覆盖编辑器实时标注、保存拦截、提交拦截                  |
 | **防绕过机制**          | 禁用/卸载/配置篡改自动恢复，心跳上报                                 |
 
 ***
@@ -70,26 +58,26 @@
 
 #### 账号合规检测
 
-| 功能 | 说明 |
-|------|------|
-| 邮箱读取 | 从 Cursor `state.vscdb` 数据库读取登录邮箱 |
-| 域名校验 | 提取邮箱域名，与 `allowedEmailDomains` 白名单比对 |
+| 功能    | 说明                                           |
+| ----- | -------------------------------------------- |
+| 邮箱读取  | 从 Cursor `state.vscdb` 数据库读取登录邮箱             |
+| 域名校验  | 提取邮箱域名，与 `allowedEmailDomains` 白名单比对         |
 | 状态栏显示 | `✅ user@mycompany.com` 或 `⚠️ user@gmail.com` |
-| 配置联动 | 白名单变更时自动重新校验 |
-| 告警弹窗 | 不合规账号弹出 ErrorMessage |
+| 配置联动  | 白名单变更时自动重新校验                                 |
+| 告警弹窗  | 不合规账号弹出 ErrorMessage                         |
 
 #### 账号变动监测
 
 通过 **30 秒轮询** + **双重检测机制**（邮箱变化 + 认证状态变化）实时监控账号变动：
 
-| 变动类型 | 检测方式 | 合规 | 告警级别 |
-|----------|----------|------|----------|
-| 🟢 登录 | 邮箱从无到有 | ✅ | InformationMessage |
-| 🟢 登录 | 邮箱从无到有 | ❌ | **模态 ErrorMessage** |
-| 🔴 登出 | 认证状态丢失（token/session 消失） | - | WarningMessage |
-| 🟡 切换 | 邮箱变化 | ✅ | InformationMessage |
-| 🟡 切换 | 邮箱变化 | ❌ | **模态 ErrorMessage** + "切换回原账号"按钮 |
-| ⚠️ 不合规 | 当前账号不在白名单 | ❌ | ErrorMessage |
+| 变动类型   | 检测方式                     | 合规 | 告警级别                             |
+| ------ | ------------------------ | -- | -------------------------------- |
+| 🟢 登录  | 邮箱从无到有                   | ✅  | InformationMessage               |
+| 🟢 登录  | 邮箱从无到有                   | ❌  | **模态 ErrorMessage**              |
+| 🔴 登出  | 认证状态丢失（token/session 消失） | -  | WarningMessage                   |
+| 🟡 切换  | 邮箱变化                     | ✅  | InformationMessage               |
+| 🟡 切换  | 邮箱变化                     | ❌  | **模态 ErrorMessage** + "切换回原账号"按钮 |
+| ⚠️ 不合规 | 当前账号不在白名单                | ❌  | ErrorMessage                     |
 
 > **技术说明**：Cursor 登出后 `cachedEmail` 不会被立即清除，因此插件额外扫描 `state.vscdb` 中所有认证相关字段（token、session、accessToken 等），通过 `authStateHash` 哈希摘要检测认证状态的任何变化。
 
@@ -97,10 +85,10 @@
 
 `Ctrl+Shift+P` → **"Cursor Shield: 查看账号变动记录"** → 打开历史记录表格：
 
-| 时间 | 类型 | 原账号 | 新账号 | 合规 |
-|------|------|--------|--------|------|
-| 2026-05-17 15:30 | 🟡 切换 | user@company.com | user@gmail.com | ❌ |
-| 2026-05-17 15:35 | 🟡 切换 | user@gmail.com | user@company.com | ✅ |
+| 时间               | 类型    | 原账号                | 新账号                | 合规 |
+| ---------------- | ----- | ------------------ | ------------------ | -- |
+| 2026-05-17 15:30 | 🟡 切换 | <user@company.com> | <user@gmail.com>   | ❌  |
+| 2026-05-17 15:35 | 🟡 切换 | <user@gmail.com>   | <user@company.com> | ✅  |
 
 记录最多保留 200 条。
 
@@ -158,13 +146,13 @@
 
 #### 检测卡点
 
-| 卡点      | 触发时机                                | 行为                 |
-| ------- | ----------------------------------- | ------------------ |
-| 编辑器实时装饰 | `onDidChangeTextDocument`（500ms 防抖） | 红色波浪线 + 悬停卡片       |
-| 文件保存拦截  | `onDidSaveTextDocument`             | critical 匹配弹窗      |
-| 暂存前拦截   | `cursorSecurity.checkBeforeStage`   | 模态弹窗阻断             |
-| 提交前拦截   | `cursorSecurity.checkBeforeCommit`  | 模态弹窗阻断             |
-| 全量工作区扫描 | `cursorSecurity.scanNow` 命令         | 进度通知 + 结果统计        |
+| 卡点      | 触发时机                                | 行为            |
+| ------- | ----------------------------------- | ------------- |
+| 编辑器实时装饰 | `onDidChangeTextDocument`（500ms 防抖） | 红色波浪线 + 悬停卡片  |
+| 文件保存拦截  | `onDidSaveTextDocument`             | critical 匹配弹窗 |
+| 暂存前拦截   | `cursorSecurity.checkBeforeStage`   | 模态弹窗阻断        |
+| 提交前拦截   | `cursorSecurity.checkBeforeCommit`  | 模态弹窗阻断        |
+| 全量工作区扫描 | `cursorSecurity.scanNow` 命令         | 进度通知 + 结果统计   |
 
 #### 检测引擎
 
@@ -208,11 +196,11 @@
 
 | 卡片          | 内容                        |
 | ----------- | ------------------------- |
-| 账号信息        | 邮箱、合规状态                  |
+| 账号信息        | 邮箱、合规状态                   |
 | Git 仓库      | 远程地址、合规状态（Allowed/Denied） |
 | MCP / Skill | 列表（名称 + 类型标签 + 授权状态）      |
 | 敏感信息扫描      | Critical / High / 总计 三栏统计 |
-| 防护状态        | 自保护启用状态                    |
+| 防护状态        | 自保护启用状态                   |
 | 操作按钮        | 立即扫描 / 导出日志 / 查看历史        |
 
 ***
@@ -243,21 +231,21 @@ cursor --install-extension cursor-shield-1.0.0.vsix
 
 ## ⚙️ 配置项
 
-| 配置键                                      | 类型        | 默认值                             | 说明                                                      |
-| ---------------------------------------- | --------- | ------------------------------- | ------------------------------------------------------- |
-| `cursorSecurity.enabled`                 | boolean   | `true`                          | 启用或禁用安全监控                                               |
-| `cursorSecurity.allowedEmailDomains`     | string\[] | `[]`                            | 允许的邮箱域名列表，如 `["mycompany.com"]`                         |
-| `cursorSecurity.allowedRepos`            | string\[] | `[]`                            | 允许的 Git 仓库地址正则列表，如 `["^https://github\\.com/myorg/.*"]` |
-| `cursorSecurity.blockedMCPs`             | string\[] | `[]`                            | 禁用的 MCP 服务名称列表                                          |
-| `cursorSecurity.allowedSkills`           | string\[] | `[]`                            | 允许的 Skill 名称列表，为空则允许所有                                  |
-| `cursorSecurity.sensitiveRules`          | string    | `"built-in"`                    | 规则来源：`built-in` / `custom` / `both`                     |
-| `cursorSecurity.customRulesPath`         | string    | `".cursor-security-rules.toml"` | 自定义敏感信息规则文件路径                                           |
-| `cursorSecurity.heartbeatEndpoint`       | string    | `""`                            | 心跳上报端点 URL，为空则禁用                                        |
-| `cursorSecurity.blockCommitOnLeak`       | boolean   | `true`                          | 检测到敏感信息时是否阻断提交                                          |
-| `cursorSecurity.blockPushOnLeak`         | boolean   | `true`                          | 检测到未授权仓库时是否阻断推送                                         |
-| `cursorSecurity.maxScanLines`            | number    | `5000`                          | 单文件最大扫描行数                                               |
-| `cursorSecurity.entropyThreshold`        | number    | `4.5`                           | 高熵字符串检测阈值                                               |
-| `cursorSecurity.autoRecoverEnabled`      | boolean   | `true`                          | 是否允许自动恢复安全配置                                            |
+| 配置键                                  | 类型        | 默认值                             | 说明                                                      |
+| ------------------------------------ | --------- | ------------------------------- | ------------------------------------------------------- |
+| `cursorSecurity.enabled`             | boolean   | `true`                          | 启用或禁用安全监控                                               |
+| `cursorSecurity.allowedEmailDomains` | string\[] | `[]`                            | 允许的邮箱域名列表，如 `["mycompany.com"]`                         |
+| `cursorSecurity.allowedRepos`        | string\[] | `[]`                            | 允许的 Git 仓库地址正则列表，如 `["^https://github\\.com/myorg/.*"]` |
+| `cursorSecurity.blockedMCPs`         | string\[] | `[]`                            | 禁用的 MCP 服务名称列表                                          |
+| `cursorSecurity.allowedSkills`       | string\[] | `[]`                            | 允许的 Skill 名称列表，为空则允许所有                                  |
+| `cursorSecurity.sensitiveRules`      | string    | `"built-in"`                    | 规则来源：`built-in` / `custom` / `both`                     |
+| `cursorSecurity.customRulesPath`     | string    | `".cursor-security-rules.toml"` | 自定义敏感信息规则文件路径                                           |
+| `cursorSecurity.heartbeatEndpoint`   | string    | `""`                            | 心跳上报端点 URL，为空则禁用                                        |
+| `cursorSecurity.blockCommitOnLeak`   | boolean   | `true`                          | 检测到敏感信息时是否阻断提交                                          |
+| `cursorSecurity.blockPushOnLeak`     | boolean   | `true`                          | 检测到未授权仓库时是否阻断推送                                         |
+| `cursorSecurity.maxScanLines`        | number    | `5000`                          | 单文件最大扫描行数                                               |
+| `cursorSecurity.entropyThreshold`    | number    | `4.5`                           | 高熵字符串检测阈值                                               |
+| `cursorSecurity.autoRecoverEnabled`  | boolean   | `true`                          | 是否允许自动恢复安全配置                                            |
 
 ### 快速配置示例
 
@@ -347,8 +335,8 @@ severity = "medium"
 
 | 场景                          | 能否检测   | 通过哪个功能                          |
 | --------------------------- | ------ | ------------------------------- |
-| 使用个人邮箱登录 Cursor             | ✅      | 账号域名校验 + 登录告警                    |
-| 账号登出                        | ✅      | 认证状态检测（authStateHash 变化）         |
+| 使用个人邮箱登录 Cursor             | ✅      | 账号域名校验 + 登录告警                   |
+| 账号登出                        | ✅      | 认证状态检测（authStateHash 变化）        |
 | 账号切换到个人邮箱                   | ✅      | 账号变动监测（模态弹窗 + 切换回原账号按钮）         |
 | 克隆未授权仓库                     | ✅      | Origin 合规校验                     |
 | `git remote add` 添加新远程      | ✅      | 远程变更检测（.git/config 监听 + 30s 轮询） |
