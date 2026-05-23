@@ -50,6 +50,7 @@ const heartbeat_1 = require("./protection/heartbeat");
 const webview_1 = require("./dashboard/webview");
 const engine_1 = require("./detection/engine");
 const preCommit_2 = require("./detection/preCommit");
+const reporter_1 = require("./reporting/reporter");
 const MODULE = 'Extension';
 let leakStatusBarItem;
 let allDisposables = [];
@@ -106,6 +107,10 @@ function activate(context) {
     allDisposables.push(...dashboardDisposables);
     context.subscriptions.push(...dashboardDisposables);
     logger.info(MODULE, 'Dashboard registered');
+    const reporterDisposable = (0, reporter_1.startReporting)(context);
+    allDisposables.push(reporterDisposable);
+    context.subscriptions.push(reporterDisposable);
+    logger.info(MODULE, 'Reporter registered');
     registerCommands(context);
     const dashboardRefreshInterval = setInterval(() => {
         updateLeakStatusBar();

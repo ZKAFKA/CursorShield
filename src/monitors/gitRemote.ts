@@ -309,6 +309,22 @@ export function getCurrentStatus(): GitRepoStatus {
     return { ...currentStatus };
 }
 
+export function getRemotesWithCompliance(repoPath: string | null, allowedRepos: string[]): Array<{ name: string; url: string; isCompliant: boolean }> {
+    if (!repoPath) return [];
+    const remotes = snapshotAllRemotes(repoPath);
+    const result: Array<{ name: string; url: string; isCompliant: boolean }> = [];
+    remotes.forEach((url, name) => {
+        let isCompliant = true;
+        if (allowedRepos.length > 0) {
+            isCompliant = allowedRepos.some(pattern => {
+                try { return new RegExp(pattern, 'i').test(url); } catch { return false; }
+            });
+        }
+        result.push({ name, url, isCompliant });
+    });
+    return result;
+}
+
 let knownRemotes: Map<string, string> = new Map();
 
 function snapshotAllRemotes(repoPath: string): Map<string, string> {

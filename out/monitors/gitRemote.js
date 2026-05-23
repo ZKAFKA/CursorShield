@@ -37,6 +37,7 @@ exports.createStatusBarItem = createStatusBarItem;
 exports.getStatusBarItem = getStatusBarItem;
 exports.checkGitRepo = checkGitRepo;
 exports.getCurrentStatus = getCurrentStatus;
+exports.getRemotesWithCompliance = getRemotesWithCompliance;
 exports.registerGitMonitor = registerGitMonitor;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
@@ -289,6 +290,27 @@ function updateStatusBar() {
 }
 function getCurrentStatus() {
     return { ...currentStatus };
+}
+function getRemotesWithCompliance(repoPath, allowedRepos) {
+    if (!repoPath)
+        return [];
+    const remotes = snapshotAllRemotes(repoPath);
+    const result = [];
+    remotes.forEach((url, name) => {
+        let isCompliant = true;
+        if (allowedRepos.length > 0) {
+            isCompliant = allowedRepos.some(pattern => {
+                try {
+                    return new RegExp(pattern, 'i').test(url);
+                }
+                catch {
+                    return false;
+                }
+            });
+        }
+        result.push({ name, url, isCompliant });
+    });
+    return result;
 }
 let knownRemotes = new Map();
 function snapshotAllRemotes(repoPath) {

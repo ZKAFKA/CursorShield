@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>CursorShield | Security Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link href="css/style.css" rel="stylesheet">
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "surface-bright": "#343941",
+        "on-primary": "#2f3035",
+        "surface-container-high": "#252a32",
+        "on-primary-fixed": "#1a1c20",
+        "inverse-primary": "#5d5e63",
+        "on-tertiary-fixed-variant": "#2f2ebe",
+        "on-tertiary-fixed": "#07006c",
+        "primary-container": "#0a0c10",
+        "surface-tint": "#c6c6cc",
+        "on-secondary-fixed-variant": "#00429c",
+        "surface-dim": "#0f141b",
+        "surface-container": "#1b2027",
+        "on-tertiary-container": "#6669f4",
+        "outline-variant": "#45474b",
+        "error-container": "#93000a",
+        "inverse-surface": "#dee2ec",
+        "primary-fixed-dim": "#c6c6cc",
+        "on-error": "#690005",
+        "on-tertiary": "#1000a9",
+        "on-primary-container": "#797a7f",
+        "on-primary-fixed-variant": "#45474b",
+        "on-surface": "#dee2ec",
+        "outline": "#909095",
+        "tertiary-container": "#02003e",
+        "error": "#ffb4ab",
+        "surface-container-lowest": "#090f15",
+        "surface-container-low": "#171c23",
+        "on-secondary-container": "#002661",
+        "secondary": "#b0c6ff",
+        "on-surface-variant": "#c6c6cb",
+        "tertiary-fixed": "#e1e0ff",
+        "surface": "#0f141b",
+        "tertiary-fixed-dim": "#c0c1ff",
+        "background": "#0f141b",
+        "on-secondary": "#002d6f",
+        "primary-fixed": "#e2e2e8",
+        "primary": "#c6c6cc",
+        "on-background": "#dee2ec",
+        "tertiary": "#c0c1ff",
+        "surface-container-highest": "#30353d",
+        "secondary-fixed": "#d9e2ff",
+        "secondary-container": "#568dff",
+        "on-secondary-fixed": "#001945",
+        "surface-variant": "#30353d",
+        "on-error-container": "#ffdad6",
+        "secondary-fixed-dim": "#b0c6ff",
+        "inverse-on-surface": "#2c3138"
+      },
+      borderRadius: {
+        "DEFAULT": "0.125rem",
+        "lg": "0.25rem",
+        "xl": "0.5rem",
+        "full": "0.75rem"
+      },
+      spacing: {
+        "gutter": "16px",
+        "stack-md": "16px",
+        "stack-xs": "4px",
+        "container-margin": "24px",
+        "stack-sm": "8px",
+        "unit": "4px",
+        "stack-lg": "24px",
+        "stack-xl": "48px"
+      },
+      fontFamily: {
+        "body-lg": ["Inter"],
+        "display-lg": ["Hanken Grotesk"],
+        "mono-code": ["JetBrains Mono"],
+        "body-md": ["Inter"],
+        "body-sm": ["Inter"],
+        "headline-sm": ["Hanken Grotesk"],
+        "headline-md": ["Hanken Grotesk"],
+        "mono-label": ["JetBrains Mono"]
+      },
+      fontSize: {
+        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "mono-code": ["12px", { lineHeight: "20px", fontWeight: "400" }],
+        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+        "body-sm": ["12px", { lineHeight: "18px", fontWeight: "400" }],
+        "headline-sm": ["18px", { lineHeight: "24px", fontWeight: "600" }],
+        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+        "mono-label": ["13px", { lineHeight: "16px", fontWeight: "500" }]
+      }
+    }
+  }
+}
+</script>
+</head>
+<body class="font-body-md text-on-surface">
+
+<!-- Sidebar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container dark:bg-surface-container border-r border-outline-variant flex flex-col py-stack-lg z-40">
+  <div class="px-6 mb-8">
+    <h1 class="font-display-lg text-display-lg font-bold text-secondary tracking-tight">Monitor</h1>
+    <p class="font-mono-label text-mono-label text-on-surface-variant opacity-60">v2.4.0</p>
+  </div>
+  <nav class="flex-1 px-2 space-y-1">
+    <a class="bg-surface-container-highest text-secondary border-l-2 border-secondary px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all cursor-pointer" onclick="switchTab('dashboard')">
+      <span class="material-symbols-outlined">dashboard</span>
+      <span>Dashboard</span>
+    </a>
+    <a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all cursor-pointer" onclick="switchTab('reports')">
+      <span class="material-symbols-outlined">analytics</span>
+      <span>Reports</span>
+    </a>
+    <a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all cursor-pointer" onclick="switchTab('settings')">
+      <span class="material-symbols-outlined">settings</span>
+      <span>Settings</span>
+    </a>
+  </nav>
+  <div class="px-2 mt-auto border-t border-outline-variant pt-4">
+    <div class="mt-4 px-4 py-3 flex items-center gap-3 border-t border-outline-variant">
+      <div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-xs">SO</div>
+      <div class="flex flex-col">
+        <span class="text-xs font-bold text-on-surface">System Operator</span>
+        <span class="text-[10px] text-on-surface-variant">Admin Privileges</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Top Bar -->
+<header class="flex justify-between items-center px-gutter w-full h-16 sticky top-0 z-30 bg-surface-dim border-b border-outline-variant ml-64 w-[calc(100%-16rem)]">
+  <div class="flex items-center gap-4">
+    <span class="font-display-lg text-display-lg text-secondary tracking-tight">CursorShield</span>
+    <div class="h-6 w-px bg-outline-variant mx-2"></div>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-sm">search</span>
+      <input id="searchInput" class="bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-1.5 text-body-sm font-mono-code focus:outline-none focus:border-secondary transition-all w-64" placeholder="Search name, device..." type="text" oninput="applyFilters()">
+    </div>
+  </div>
+  <div class="flex items-center gap-4">
+
+    <button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors text-on-surface-variant relative">
+      <span class="material-symbols-outlined">notifications</span>
+      <span id="alertDot" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error hidden"></span>
+    </button>
+    <button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors text-on-surface-variant">
+      <span class="material-symbols-outlined">account_circle</span>
+    </button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="ml-64 p-stack-lg min-h-[calc(100vh-4rem)]">
+  <div class="max-w-[1600px] mx-auto">
+
+    <!-- ===== Dashboard Tab ===== -->
+    <div id="dashboardContent">
+      <div id="statsOverview" class="grid grid-cols-4 gap-4 mb-stack-md"></div>
+      <div class="bg-surface-container-low border border-outline-variant p-4 rounded-lg mb-stack-md flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-6">
+          <span class="text-body-sm font-bold text-on-surface-variant uppercase tracking-wider text-[10px]">Filter Threats:</span>
+          <div class="flex items-center gap-4" id="filterCheckboxes">
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox" value="account" onchange="applyFilters()">
+              <span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Account Anomaly</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox" value="git" onchange="applyFilters()">
+              <span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Git Connection Error</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox" value="mcpSkill" onchange="applyFilters()">
+              <span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">MCP/Skill Error</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox" value="sensitive" onchange="applyFilters()" checked>
+              <span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Sensitive Info Detected</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-body-sm text-on-surface-variant">Sort by:</span>
+          <select id="sortSelect" class="bg-surface-container border border-outline-variant text-body-sm rounded px-3 py-1 focus:outline-none focus:border-secondary font-mono-label" onchange="applyFilters()">
+            <option value="risk-desc">Risk Count (High to Low)</option>
+            <option value="leaks-desc">Sensitive Leaks (Descending)</option>
+            <option value="name-asc">Name (A-Z)</option>
+          </select>
+        </div>
+      </div>
+      <div class="bg-surface-container-low border border-outline-variant rounded-lg overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-container-high border-b border-outline-variant">
+                <th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Cursor Account</th>
+                <th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Account Status</th>
+                <th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Git Status</th>
+                <th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">MCP Status</th>
+                <th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Sensitive Info</th>
+                <th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Risk Count</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="text-body-sm"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="hidden p-12 text-center">
+          <span class="material-symbols-outlined text-4xl text-on-surface-variant mb-4 block">search_off</span>
+          <p class="text-on-surface-variant font-mono-label">No matching records found</p>
+          <p class="text-body-sm text-on-surface-variant opacity-60 mt-1">Try adjusting your filter conditions</p>
+        </div>
+      </div>
+      <div id="pagination" class="flex items-center justify-between mt-4 text-body-sm text-on-surface-variant"></div>
+    </div>
+
+    <!-- ===== Reports Tab ===== -->
+    <div id="reportsContent" class="hidden">
+      <div class="flex items-center justify-between mb-stack-md">
+        <div>
+          <h2 class="font-headline-md text-headline-md text-secondary">Reports</h2>
+          <p class="text-body-sm text-on-surface-variant">Security Audit Summary</p>
+        </div>
+        <button class="px-4 py-2 bg-secondary text-on-secondary font-mono-label text-mono-label rounded flex items-center gap-2 hover:opacity-90 transition-opacity" onclick="exportFullReport()">
+          <span class="material-symbols-outlined text-sm">description</span>
+          Export Full Report
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 mb-stack-md" id="reportsStats"></div>
+
+      <div class="grid grid-cols-2 gap-4 mb-stack-md">
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-6">
+          <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant mb-4">Risk Distribution</h4>
+          <div id="riskDonutContainer" class="flex items-center justify-center gap-8">
+            <div id="riskDonut"></div>
+            <div id="riskLegend" class="space-y-3"></div>
+          </div>
+        </div>
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-6">
+          <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant mb-4">Top Violators</h4>
+          <div id="topViolators" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <div class="bg-surface-container-low border border-outline-variant rounded-lg p-6">
+        <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant mb-4">Security Incidents Timeline</h4>
+        <div id="incidentTimeline" class="custom-scrollbar max-h-[400px] overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- ===== Settings Tab ===== -->
+    <div id="settingsContent" class="hidden">
+      <div class="flex items-center justify-between mb-stack-md">
+        <div>
+          <h2 class="font-headline-md text-headline-md text-secondary">Settings</h2>
+          <p class="text-body-sm text-on-surface-variant">Security Policy Configuration</p>
+        </div>
+        <div id="settingsToast" class="hidden px-4 py-2 bg-green-900/30 border border-green-500/30 rounded text-body-sm text-green-400 font-mono-label transition-opacity"></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-stack-md">
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="material-symbols-outlined text-secondary text-sm">mail</span>
+            <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">Allowed Email Domains</h4>
+          </div>
+          <div class="flex gap-2 mb-3">
+            <input id="domainInput" class="flex-1 bg-surface-container border border-outline-variant rounded px-3 py-1.5 text-body-sm font-mono-code focus:outline-none focus:border-secondary transition-all" placeholder="e.g. company.com" type="text" onkeydown="if(event.key==='Enter')addSettingsTag('domain')">
+            <button class="px-3 py-1.5 bg-secondary text-on-secondary text-body-sm font-mono-label rounded hover:opacity-90 transition-opacity" onclick="addSettingsTag('domain')">Add</button>
+          </div>
+          <div id="domainTags" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="material-symbols-outlined text-secondary text-sm">folder</span>
+            <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">Allowed Git Repositories</h4>
+          </div>
+          <div class="flex gap-2 mb-3">
+            <input id="repoInput" class="flex-1 bg-surface-container border border-outline-variant rounded px-3 py-1.5 text-body-sm font-mono-code focus:outline-none focus:border-secondary transition-all" placeholder="e.g. github.com/company/.*" type="text" onkeydown="if(event.key==='Enter')addSettingsTag('repo')">
+            <button class="px-3 py-1.5 bg-secondary text-on-secondary text-body-sm font-mono-label rounded hover:opacity-90 transition-opacity" onclick="addSettingsTag('repo')">Add</button>
+          </div>
+          <div id="repoTags" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="material-symbols-outlined text-secondary text-sm">block</span>
+            <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">Blocked MCP Servers</h4>
+          </div>
+          <div class="flex gap-2 mb-3">
+            <input id="mcpInput" class="flex-1 bg-surface-container border border-outline-variant rounded px-3 py-1.5 text-body-sm font-mono-code focus:outline-none focus:border-secondary transition-all" placeholder="e.g. Filesystem" type="text" onkeydown="if(event.key==='Enter')addSettingsTag('mcp')">
+            <button class="px-3 py-1.5 bg-secondary text-on-secondary text-body-sm font-mono-label rounded hover:opacity-90 transition-opacity" onclick="addSettingsTag('mcp')">Add</button>
+          </div>
+          <div id="mcpTags" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="bg-surface-container-low border border-outline-variant rounded-lg p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="material-symbols-outlined text-secondary text-sm">checklist</span>
+            <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">Allowed Skills</h4>
+          </div>
+          <div class="flex gap-2 mb-3">
+            <input id="skillInput" class="flex-1 bg-surface-container border border-outline-variant rounded px-3 py-1.5 text-body-sm font-mono-code focus:outline-none focus:border-secondary transition-all" placeholder="e.g. code-review" type="text" onkeydown="if(event.key==='Enter')addSettingsTag('skill')">
+            <button class="px-3 py-1.5 bg-secondary text-on-secondary text-body-sm font-mono-label rounded hover:opacity-90 transition-opacity" onclick="addSettingsTag('skill')">Add</button>
+          </div>
+          <div id="skillTags" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <div class="bg-surface-container-low border border-outline-variant rounded-lg p-5 mb-stack-md">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="material-symbols-outlined text-secondary text-sm">tune</span>
+          <h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">Scan Configuration</h4>
+        </div>
+        <div class="grid grid-cols-2 gap-x-8 gap-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-body-sm text-on-surface-variant">Sensitive Info Scan</span>
+            <button id="toggleScanEnabled" class="toggle-switch active" onclick="toggleSwitch('scanEnabled')">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-body-sm text-on-surface-variant">Auto Block on Leak</span>
+            <button id="toggleBlockOnLeak" class="toggle-switch active" onclick="toggleSwitch('blockOnLeak')">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-body-sm text-on-surface-variant">Max Scan Lines</span>
+            <input id="maxScanLinesInput" class="w-24 bg-surface-container border border-outline-variant rounded px-3 py-1 text-body-sm font-mono-code text-right focus:outline-none focus:border-secondary transition-all" type="number" value="5000" min="100" step="100">
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-body-sm text-on-surface-variant">Polling Interval</span>
+            <select id="pollingIntervalSelect" class="w-32 bg-surface-container border border-outline-variant rounded px-3 py-1 text-body-sm font-mono-code focus:outline-none focus:border-secondary">
+              <option value="10000">10s</option>
+              <option value="30000" selected>30s</option>
+              <option value="60000">60s</option>
+              <option value="300000">5min</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button class="px-6 py-2 bg-secondary text-on-secondary font-mono-label text-mono-label rounded hover:opacity-90 transition-opacity" onclick="saveSettings()">
+          <span class="material-symbols-outlined text-sm align-middle mr-1">save</span>
+          Save Configuration
+        </button>
+        <button class="px-6 py-2 border border-outline-variant text-on-surface font-mono-label text-mono-label rounded hover:bg-surface-bright transition-colors" onclick="resetSettings()">
+          <span class="material-symbols-outlined text-sm align-middle mr-1">restart_alt</span>
+          Reset to Defaults
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Drawer Detail Panel -->
+<div class="fixed top-0 right-0 h-full w-[500px] bg-surface-container border-l border-outline-variant shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out" id="statusDetailPanel">
+  <div class="h-full flex flex-col">
+    <div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-high">
+      <div class="flex items-center gap-4">
+        <div id="drawerRiskIcon" class="w-12 h-12 rounded-lg flex items-center justify-center">
+          <span class="material-symbols-outlined text-3xl">security</span>
+        </div>
+        <div>
+          <h3 class="font-headline-sm text-headline-sm">Status Detail</h3>
+          <p id="drawerRiskLabel" class="font-mono-code text-[11px]"></p>
+        </div>
+      </div>
+      <button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors" onclick="closeDrawer()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8" id="drawerContent"></div>
+    <div class="p-6 border-t border-outline-variant bg-surface-container-high grid grid-cols-2 gap-4">
+      <button class="px-4 py-2 border border-outline-variant text-on-surface text-body-sm font-mono-label rounded hover:bg-surface-bright transition-colors" onclick="closeDrawer()">
+        Close Panel
+      </button>
+      <button class="px-4 py-2 bg-error text-on-error text-body-sm font-bold rounded hover:opacity-90 transition-opacity" onclick="triggerAlert()">
+        Trigger Alert
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-0 bg-black/60 opacity-0 pointer-events-none transition-opacity duration-300 z-40" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

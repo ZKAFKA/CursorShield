@@ -1,0 +1,151 @@
+body {
+    background-color: #0f141b;
+    color: #dee2ec;
+    -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #1b2027;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #45474b;
+    border-radius: 10px;
+}
+
+.glass-panel {
+    background: rgba(22, 27, 34, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid #30363D;
+}
+
+.risk-glow {
+    box-shadow: inset 4px 0 0 0 #ffb4ab;
+}
+
+.risk-donut {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.risk-donut-inner {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: #171c23;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.risk-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.incident-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.timeline-line {
+    width: 2px;
+    background: #45474b;
+    position: absolute;
+    left: 4px;
+    top: 16px;
+    bottom: 0;
+}
+
+.timeline-item:last-child .timeline-line {
+    display: none;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: rgba(176, 198, 255, 0.1);
+    border: 1px solid rgba(176, 198, 255, 0.25);
+    border-radius: 4px;
+    cursor: default;
+}
+
+.tag-chip-remove {
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.tag-chip-remove:hover {
+    opacity: 1;
+}
+
+.toggle-switch {
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    background: #45474b;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.toggle-switch.active {
+    background: #568dff;
+}
+
+.toggle-knob {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #dee2ec;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: left 0.2s;
+}
+
+.toggle-switch.active .toggle-knob {
+    left: 20px;
+}
+
+.settings-toast-show {
+    display: block !important;
+    opacity: 1;
+}
+
+#reportsStats .stat-card {
+    background: #171c23;
+    border: 1px solid #45474b;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}

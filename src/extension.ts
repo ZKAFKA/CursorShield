@@ -13,6 +13,7 @@ import { registerHeartbeat } from './protection/heartbeat';
 import { registerDashboard, refreshDashboard, getDashboardProvider } from './dashboard/webview';
 import { scanWorkspace, getLastScanSummary, clearScanCache, getActiveEditorStats } from './detection/engine';
 import { getLastLeakMatches, hasLeakDetected } from './detection/preCommit';
+import { startReporting } from './reporting/reporter';
 
 const MODULE = 'Extension';
 
@@ -90,6 +91,11 @@ export function activate(context: vscode.ExtensionContext) {
     allDisposables.push(...dashboardDisposables);
     context.subscriptions.push(...dashboardDisposables);
     logger.info(MODULE, 'Dashboard registered');
+
+    const reporterDisposable = startReporting(context);
+    allDisposables.push(reporterDisposable);
+    context.subscriptions.push(reporterDisposable);
+    logger.info(MODULE, 'Reporter registered');
 
     registerCommands(context);
 

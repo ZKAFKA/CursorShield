@@ -1,0 +1,492 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>CursorGuard | Security Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            background-color: #0f141b;
+            color: #dee2ec;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1b2027;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #45474b;
+            border-radius: 10px;
+        }
+        .glass-panel {
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #30363D;
+        }
+        .risk-glow {
+            box-shadow: inset 4px 0 0 0 #ffb4ab;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#343941",
+                        "on-primary": "#2f3035",
+                        "surface-container-high": "#252a32",
+                        "on-primary-fixed": "#1a1c20",
+                        "inverse-primary": "#5d5e63",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "on-tertiary-fixed": "#07006c",
+                        "primary-container": "#0a0c10",
+                        "surface-tint": "#c6c6cc",
+                        "on-secondary-fixed-variant": "#00429c",
+                        "surface-dim": "#0f141b",
+                        "surface-container": "#1b2027",
+                        "on-tertiary-container": "#6669f4",
+                        "outline-variant": "#45474b",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#dee2ec",
+                        "primary-fixed-dim": "#c6c6cc",
+                        "on-error": "#690005",
+                        "on-tertiary": "#1000a9",
+                        "on-primary-container": "#797a7f",
+                        "on-primary-fixed-variant": "#45474b",
+                        "on-surface": "#dee2ec",
+                        "outline": "#909095",
+                        "tertiary-container": "#02003e",
+                        "error": "#ffb4ab",
+                        "surface-container-lowest": "#090f15",
+                        "surface-container-low": "#171c23",
+                        "on-secondary-container": "#002661",
+                        "secondary": "#b0c6ff",
+                        "on-surface-variant": "#c6c6cb",
+                        "tertiary-fixed": "#e1e0ff",
+                        "surface": "#0f141b",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "background": "#0f141b",
+                        "on-secondary": "#002d6f",
+                        "primary-fixed": "#e2e2e8",
+                        "primary": "#c6c6cc",
+                        "on-background": "#dee2ec",
+                        "tertiary": "#c0c1ff",
+                        "surface-container-highest": "#30353d",
+                        "secondary-fixed": "#d9e2ff",
+                        "secondary-container": "#568dff",
+                        "on-secondary-fixed": "#001945",
+                        "surface-variant": "#30353d",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#b0c6ff",
+                        "inverse-on-surface": "#2c3138"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "stack-xs": "4px",
+                        "container-margin": "24px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "stack-lg": "24px",
+                        "stack-xl": "48px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "mono-code": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-sm": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "mono-label": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mono-code": ["12px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "mono-label": ["13px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- Sidebar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container dark:bg-surface-container border-r border-outline-variant flex flex-col py-stack-lg z-40">
+<div class="px-6 mb-8">
+<h1 class="font-display-lg text-display-lg font-bold text-secondary tracking-tight">Monitor</h1>
+<p class="font-mono-label text-mono-label text-on-surface-variant opacity-60">v2.4.0</p>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="bg-surface-container-highest text-secondary border-l-2 border-secondary px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="">Reports</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+</nav>
+<div class="px-2 mt-auto border-t border-outline-variant pt-4">
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="">Documentation</span>
+</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-bright px-4 py-3 flex items-center gap-3 font-mono-label text-mono-label transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="">Help</span>
+</a>
+<div class="mt-4 px-4 py-3 flex items-center gap-3 border-t border-outline-variant">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-xs">SO</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">System Operator</span>
+<span class="text-[10px] text-on-surface-variant">Admin Privileges</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Top Bar -->
+<header class="flex justify-between items-center px-gutter w-full h-16 sticky top-0 z-30 bg-surface-dim border-b border-outline-variant ml-64 w-[calc(100%-16rem)]">
+<div class="flex items-center gap-4">
+<span class="font-display-lg text-display-lg text-secondary tracking-tight">CursorShield</span>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-1.5 text-body-sm font-mono-code focus:outline-none focus:border-secondary transition-all w-64" placeholder="Search logs, employees..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-4 py-2 bg-secondary text-on-secondary font-mono-label text-mono-label rounded flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+                        Export Audit
+                    </button><button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span>
+</button>
+<button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 p-stack-lg min-h-[calc(100vh-4rem)]">
+<div class="max-w-[1600px] mx-auto">
+<!-- Header Section -->
+
+<!-- Filter & Sort Bar -->
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded-lg mb-stack-md flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-6">
+<span class="text-body-sm font-bold text-on-surface-variant uppercase tracking-wider text-[10px]">Filter Threats:</span>
+<div class="flex items-center gap-4">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Account Anomaly</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Git Connection Error</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">MCP/Skill Error</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="rounded-sm bg-surface-container border-outline-variant text-secondary focus:ring-0 focus:ring-offset-0" type="checkbox">
+<span class="text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Sensitive Info Detected</span>
+</label>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-body-sm text-on-surface-variant">Sort by:</span>
+<select class="bg-surface-container border border-outline-variant text-body-sm rounded px-3 py-1 focus:outline-none focus:border-secondary font-mono-label">
+<option>Risk Count (High to Low)</option>
+<option>Last Sync (Recent First)</option>
+<option>Sensitive Leaks (Descending)</option>
+</select>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high border-b border-outline-variant">
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Employee Name</th>
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Device ID</th>
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Last Sync</th>
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Account Status</th>
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Git Status</th>
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">MCP Status</th>
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Sensitive Info</th>
+<th class="px-4 py-3 font-mono-label text-mono-label text-on-surface-variant">Risk Count</th>
+</tr>
+</thead>
+<tbody class="text-body-sm">
+<!-- High Risk Row -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-highest cursor-pointer transition-colors bg-error-container/10 risk-glow" onclick="toggleDrawer(true)">
+<td class="px-4 py-4 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A close-up studio portrait of a male professional with short dark hair, wearing a dark grey modern blazer. The lighting is low-key with a subtle blue rim light, creating a high-tech, cyber-security professional aesthetic. The background is a minimalist, deep charcoal with soft bokeh highlights. 50-100 words." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeFplsFUH078L5b-lW9m740PuYioFdR9-_GX5927OwbGfL59hsQravQrxeE1kr-DvRP3Wq9rnD3cr9OiYB9UNUNaTU-2nY4HarQ01AJB2GHxXdnUO-FMjYorH_8RpXxB4SZ4yE52BpG5yfKJ43m1qBxaBDX31V-XLDrbFff9uIVZ5lO6mmBfie1iJXyhns4ESWEYq4gQyoJx1v6w6Prxt53ERi3O2R-1SMitmCsTLxojvBDDA6cI8JOHizloTQ1blliPEjI6VKw_E">
+</div>
+<span class="font-bold">Marcus Holloway</span>
+</td>
+<td class="px-4 py-4 font-mono-code">MAC-8892-Z</td>
+<td class="px-4 py-4 text-on-surface-variant">2m ago</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-error-container/20 border border-error text-[10px] font-bold text-error uppercase">Flagged</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-green-900/20 border border-green-500 text-[10px] font-bold text-green-500 uppercase">Secure</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-error-container/20 border border-error text-[10px] font-bold text-error uppercase">Fail</span>
+</td>
+<td class="px-4 py-4 font-mono-code text-error">12 Leaks</td>
+<td class="px-4 py-4 font-bold text-error">42</td>
+</tr>
+<!-- Normal Row -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-highest cursor-pointer transition-colors" onclick="toggleDrawer(false)">
+<td class="px-4 py-4 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A portrait of a female software engineer in a dimly lit office environment. She is wearing a modern dark hoodie and has a focused expression. The scene is illuminated by the soft blue glow of multiple monitors, emphasizing a high-density data monitoring workspace. Professional cyber-security aesthetic with deep blacks and vibrant neon accents. 50-100 words." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwLR4eX0Uq4dYtNBMvIS9OjAvnWqM0yojLsAeRF1uvn8d9OOA4eOQQrExdwrKTia8ImPLjV02nW-y0e1gDeloD3OJx3Kc6l4mugAq3R6CSuDah6u515x1oNJWn50ypUChSdEntpc-F2HZruo6vOUJaqTE2iMls88WW7eEXIHMSXcTxA-v26LI7GKGv_vX6EmUlUotE4iYBHVn1Wk5YS8BscPXpOXO5YmhBxDe6m0IcNBOq1MJqc0bjeOQKBex4_ISFdc7QlVzoPwA">
+</div>
+<span class="font-bold">Elena Rodriguez</span>
+</td>
+<td class="px-4 py-4 font-mono-code">WIN-2231-A</td>
+<td class="px-4 py-4 text-on-surface-variant">14m ago</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-green-900/20 border border-green-500 text-[10px] font-bold text-green-500 uppercase">Verified</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-green-900/20 border border-green-500 text-[10px] font-bold text-green-500 uppercase">Secure</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-green-900/20 border border-green-500 text-[10px] font-bold text-green-500 uppercase">Active</span>
+</td>
+<td class="px-4 py-4 font-mono-code text-on-surface-variant">0 Leaks</td>
+<td class="px-4 py-4 font-bold">2</td>
+</tr>
+<!-- Normal Row -->
+<tr class="border-b border-outline-variant hover:bg-surface-container-highest cursor-pointer transition-colors" onclick="toggleDrawer(false)">
+<td class="px-4 py-4 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A close-up studio headshot of a developer with a neutral, professional expression. The background is a dark, tech-focused environment with subtle grid patterns. High contrast lighting with cold blue tones highlights the sharp features. The overall style is clean, corporate, and modern, fitting a high-stakes security monitoring dashboard. 50-100 words." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzE_0JA3USEs3fbCQTpPlqjbeQ-hXVHaMVfPyCTa9PJy5WB94VkRnGKIljOejXLoBqZYGto0cVtXlQW6_0Yn3V6W5nS97ii55eweUd_LbPnDeo-q9L5DIxCNlJbF21lbR33Ubgzqcoo4UjplhVfNREfR11V1EPlz9A1cK_kG_snbm9L0w4bFUBmMgv7nfXl5rHiHdrmNa1-tA2VKawYARMf7uA95LHhr26l_a3fm5HpzPesy4fUHekImIVcmKi7WOqCOjDPiO_Su0">
+</div>
+<span class="font-bold">Julian Chen</span>
+</td>
+<td class="px-4 py-4 font-mono-code">MAC-0012-K</td>
+<td class="px-4 py-4 text-on-surface-variant">1h ago</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-green-900/20 border border-green-500 text-[10px] font-bold text-green-500 uppercase">Verified</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-error-container/20 border border-error text-[10px] font-bold text-error uppercase">Error</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full bg-green-900/20 border border-green-500 text-[10px] font-bold text-green-500 uppercase">Active</span>
+</td>
+<td class="px-4 py-4 font-mono-code text-on-surface-variant">1 Leak</td>
+<td class="px-4 py-4 font-bold">15</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+<!-- Drawer Detail Panel -->
+<div class="fixed top-0 right-0 h-full w-[450px] bg-surface-container border-l border-outline-variant shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out" id="statusDetailPanel">
+<div class="h-full flex flex-col">
+<!-- Drawer Header -->
+<div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-high">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-error-container/30 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-3xl" data-icon="security">security</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm">Status Detail</h3>
+<p class="text-error font-mono-code text-[11px] animate-pulse">CRITICAL RISK DETECTED</p>
+</div>
+</div>
+<button class="p-2 hover:bg-surface-container-highest rounded-full transition-colors" onclick="toggleDrawer(false)">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<!-- Drawer Content -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+<!-- Section 1: Current Account -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="account_circle">account_circle</span>
+<h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">Current Account</h4>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-4 rounded space-y-2">
+<div class="flex justify-between">
+<span class="text-body-sm text-on-surface-variant">Email</span>
+<span class="text-body-sm font-mono-code">m.holloway@cursor.ai</span>
+</div>
+<div class="flex justify-between">
+<span class="text-body-sm text-on-surface-variant">Account ID</span>
+<span class="text-body-sm font-mono-code">USR-8829-001</span>
+</div>
+<div class="flex justify-between">
+<span class="text-body-sm text-on-surface-variant">Organization</span>
+<span class="text-body-sm font-bold">Mainnet Ops</span>
+</div>
+</div>
+</section>
+<!-- Section 2: Connected Git Remotes -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="terminal">terminal</span>
+<h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">Connected Git Remotes</h4>
+</div>
+<div class="space-y-2">
+<div class="bg-surface-container-low border border-outline-variant p-3 rounded flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500 text-sm" data-icon="check_circle">check_circle</span>
+<span class="text-body-sm font-mono-code">github.com/cursor/main-engine</span>
+</div>
+<span class="text-[10px] text-on-surface-variant uppercase">Primary</span>
+</div>
+<div class="bg-surface-container-low border border-outline-variant p-3 rounded flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500 text-sm" data-icon="check_circle">check_circle</span>
+<span class="text-body-sm font-mono-code">gitlab.internal/auth-bridge</span>
+</div>
+<span class="text-[10px] text-on-surface-variant uppercase">Internal</span>
+</div>
+</div>
+</section>
+<!-- Section 3: MCP / Skill Scan Results -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="auto_fix_high">auto_fix_high</span>
+<h4 class="font-mono-label text-mono-label uppercase tracking-widest text-on-surface-variant">MCP / Skill Scan Results</h4>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="p-3 bg-surface-container-low border border-outline-variant rounded">
+<p class="text-[10px] text-on-surface-variant font-mono-label mb-1 uppercase">PostgreSQL Tool</p>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+<span class="text-body-sm font-bold">READY</span>
+</div>
+</div>
+<div class="p-3 bg-error-container/10 border border-error/50 rounded">
+<p class="text-[10px] text-error font-mono-label mb-1 uppercase">Filesystem Tool</p>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-error"></div>
+<span class="text-body-sm font-bold text-error">PERMISSION_DENIED</span>
+</div>
+</div>
+<div class="p-3 bg-surface-container-low border border-outline-variant rounded">
+<p class="text-[10px] text-on-surface-variant font-mono-label mb-1 uppercase">Web Search</p>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+<span class="text-body-sm font-bold">READY</span>
+</div>
+</div>
+<div class="p-3 bg-surface-container-low border border-outline-variant rounded">
+<p class="text-[10px] text-on-surface-variant font-mono-label mb-1 uppercase">Docker Engine</p>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-outline"></div>
+<span class="text-body-sm font-bold text-on-surface-variant">INACTIVE</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Sensitive Information Detection -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-error text-sm" data-icon="warning">warning</span>
+<h4 class="font-mono-label text-mono-label uppercase tracking-widest text-error">Sensitive Information Detection</h4>
+</div>
+<div class="bg-error-container/5 border border-error/20 rounded p-4 space-y-4">
+<div class="flex items-start gap-3">
+<div class="mt-1 w-2 h-2 rounded-full bg-error shadow-[0_0_8px_#ffb4ab]"></div>
+<div>
+<p class="text-body-sm font-bold text-error">AWS_SECRET_ACCESS_KEY</p>
+<p class="text-[11px] font-mono-code text-on-surface-variant mt-1">Detected in <span class="text-secondary">~/projects/alpha/config.yaml</span></p>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-1.5 py-0.5 bg-error text-on-error text-[10px] font-bold rounded">HIGH SEVERITY</span>
+<span class="text-[10px] text-on-surface-variant">Looming Exposure</span>
+</div>
+</div>
+</div>
+<div class="h-px bg-outline-variant/30"></div>
+<div class="flex items-start gap-3 opacity-80">
+<div class="mt-1 w-2 h-2 rounded-full bg-secondary"></div>
+<div>
+<p class="text-body-sm font-bold text-secondary">PRIVATE_SSH_KEY</p>
+<p class="text-[11px] font-mono-code text-on-surface-variant mt-1">Detected in <span class="text-secondary">unencrypted temp file</span></p>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-1.5 py-0.5 bg-secondary text-on-secondary text-[10px] font-bold rounded">MEDIUM</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Drawer Footer -->
+<div class="p-6 border-t border-outline-variant bg-surface-container-high grid grid-cols-2 gap-4">
+<button class="px-4 py-2 border border-outline-variant text-on-surface text-body-sm font-mono-label rounded hover:bg-surface-bright transition-colors">
+                    Lock Account
+                </button>
+<button class="px-4 py-2 bg-error text-on-error text-body-sm font-bold rounded hover:opacity-90 transition-opacity">
+                    Trigger Revocation
+                </button>
+</div>
+</div>
+</div>
+<!-- Overlay -->
+<div class="fixed inset-0 bg-black/60 opacity-0 pointer-events-none transition-opacity duration-300 z-40" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
+<script>
+        function toggleDrawer(isOpen) {
+            const panel = document.getElementById('statusDetailPanel');
+            const overlay = document.getElementById('drawerOverlay');
+            
+            if (isOpen) {
+                panel.classList.remove('translate-x-full');
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                overlay.classList.add('opacity-100');
+            } else {
+                panel.classList.add('translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                overlay.classList.remove('opacity-100');
+            }
+        }
+
+        // Atmospheric lighting effect
+        document.addEventListener('mousemove', (e) => {
+            const glow = document.createElement('div');
+            // Logic for a subtle cursor trailing light could go here, but omitted for UI purity
+        });
+    </script>
+
+
+</body></html>

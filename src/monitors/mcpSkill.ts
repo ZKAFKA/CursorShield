@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import * as logger from '../utils/logger';
 
 const MODULE = 'MCPSkill';
@@ -52,36 +53,40 @@ function getWorkspaceRoot(): string | null {
     return folders[0].uri.fsPath;
 }
 
-function maskEnvValue(value: string): string {
-    if (!value) {
-        return '***';
+function getCursorSettingsPath(): string | null {
+    const home = os.homedir();
+
+    const candidates = [
+        path.join(home, 'AppData', 'Roaming', 'Cursor', 'User', 'settings.json'),
+        path.join(home, 'Library', 'Application Support', 'Cursor', 'User', 'settings.json'),
+        path.join(home, '.config', 'Cursor', 'User', 'settings.json'),
+    ];
+
+    for (const p of candidates) {
+        if (fs.existsSync(p)) {
+            return p;
+        }
     }
-    if (value.length <= 4) {
-        return '****';
-    }
-    return value.substring(0, 2) + '****' + value.substring(value.length - 2);
+
+    return null;
 }
 
-function parseMCPConfig(workspaceRoot: string): MCPInfo[] {
-    const mcpJsonPath = path.join(workspaceRoot, '.cursor', 'mcp.json');
+function getGlobalMCPJsonPath(): string | null {
+    const home = os.homedir();
+    const p = path.join(home, '.cursor', 'mcp.json');
+    return fs.existsSync(p) ? p : null;
+}
 
-    if (!fs.existsSync(mcpJsonPath)) {
-        logger.info(MODULE, `MCP config not found at: ${mcpJsonPath}`);
-        return [];
-    }
-
+function parseMCPFromJson(jsonPath: string, sourceLabel: string): MCPInfo[] {
     try {
-        const content = fs.readFileSync(mcpJsonPath, 'utf-8');
+        const content = fs.readFileSync(jsonPath, 'utf-8');
         const config = JSON.parse(content);
 
         if (!config.mcpServers || typeof config.mcpServers !== 'object') {
-            logger.warn(MODULE, 'mcp.json has no mcpServers field');
             return [];
         }
 
-        const config2 = vscode.workspace.getConfiguration('cursorSecurity');
-        const blockedMCPs: string[] = config2.get('blockedMCPs') || [];
-
+        const blockedMCPs: string[] = vscode.workspace.getConfiguration('cursorSecurity').get('blockedMCPs') || [];
         const mcps: MCPInfo[] = [];
 
         for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
@@ -90,85 +95,220 @@ function parseMCPConfig(workspaceRoot: string): MCPInfo[] {
             const args: string[] = Array.isArray(cfg.args) ? cfg.args.map(String) : [];
             const env: Record<string, string> = (cfg.env as Record<string, string>) || {};
             const envKeys = Object.keys(env);
-
             const isBlocked = blockedMCPs.includes(name);
             const isAuthorized = !isBlocked && (blockedMCPs.length === 0 || !blockedMCPs.includes(name));
 
-            mcps.push({
-                name,
-                command,
-                args,
-                envKeys,
-                isBlocked,
-                isAuthorized
-            });
+            mcps.push({ name, command, args, envKeys, isBlocked, isAuthorized });
         }
 
-        logger.info(MODULE, `Found ${mcps.length} MCP server(s)`);
+        logger.info(MODULE, `Found ${mcps.length} MCP server(s) from ${sourceLabel}`);
         return mcps;
     } catch (err) {
-        logger.error(MODULE, `Failed to parse MCP config: ${err}`);
+        logger.warn(MODULE, `Failed to parse MCP from ${sourceLabel}: ${err}`);
         return [];
     }
 }
 
-function parseSkills(workspaceRoot: string): SkillInfo[] {
-    const skillsDir = path.join(workspaceRoot, '.cursor', 'skills');
+function scanCursorProjectsMCPS(): MCPInfo[] {
+    const home = os.homedir();
+    const projectsDir = path.join(home, '.cursor', 'projects');
 
-    if (!fs.existsSync(skillsDir)) {
-        logger.info(MODULE, `Skills directory not found at: ${skillsDir}`);
+    if (!fs.existsSync(projectsDir)) {
         return [];
     }
 
+    const blockedMCPs: string[] = vscode.workspace.getConfiguration('cursorSecurity').get('blockedMCPs') || [];
+    const mcps: MCPInfo[] = [];
+    const seen = new Set<string>();
+
     try {
-        const config = vscode.workspace.getConfiguration('cursorSecurity');
-        const allowedSkills: string[] = config.get('allowedSkills') || [];
+        const projectDirs = fs.readdirSync(projectsDir, { withFileTypes: true });
 
-        const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
-        const skills: SkillInfo[] = [];
+        for (const projectDir of projectDirs) {
+            if (!projectDir.isDirectory()) { continue; }
 
-        for (const entry of entries) {
-            if (!entry.isDirectory()) {
-                continue;
-            }
+            const mcpsDir = path.join(projectsDir, projectDir.name, 'mcps');
+            if (!fs.existsSync(mcpsDir)) { continue; }
 
-            const skillDir = path.join(skillsDir, entry.name);
-            const skillJsonPath = path.join(skillDir, 'skill.json');
+            const mcpDirs = fs.readdirSync(mcpsDir, { withFileTypes: true });
 
-            let name = entry.name;
-            let description = '';
+            for (const mcpDir of mcpDirs) {
+                if (!mcpDir.isDirectory()) { continue; }
 
-            if (fs.existsSync(skillJsonPath)) {
-                try {
-                    const content = fs.readFileSync(skillJsonPath, 'utf-8');
-                    const skillDef = JSON.parse(content);
-                    if (skillDef.name) {
-                        name = skillDef.name;
-                    }
-                    if (skillDef.description) {
-                        description = skillDef.description;
-                    }
-                } catch {
-                    logger.warn(MODULE, `Failed to parse skill.json in: ${skillDir}`);
+                const metadataPath = path.join(mcpsDir, mcpDir.name, 'SERVER_METADATA.json');
+                let name = mcpDir.name;
+                let command = 'unknown';
+
+                if (fs.existsSync(metadataPath)) {
+                    try {
+                        const content = fs.readFileSync(metadataPath, 'utf-8');
+                        const meta = JSON.parse(content);
+                        if (meta.name) { name = meta.name; }
+                        if (meta.command) { command = meta.command; }
+                    } catch { /* ignore */ }
+                }
+
+                if (name.startsWith('cursor-')) { continue; }
+
+                if (!seen.has(name)) {
+                    seen.add(name);
+                    const isBlocked = blockedMCPs.includes(name);
+                    const isAuthorized = !isBlocked && (blockedMCPs.length === 0 || !blockedMCPs.includes(name));
+                    mcps.push({ name, command, args: [], envKeys: [], isBlocked, isAuthorized });
                 }
             }
+        }
 
-            const isAuthorized = allowedSkills.length === 0 || allowedSkills.includes(name);
+        if (mcps.length > 0) {
+            logger.info(MODULE, `Found ${mcps.length} MCP server(s) from ~/.cursor/projects/`);
+        }
+    } catch (err) {
+        logger.warn(MODULE, `Failed to scan ~/.cursor/projects/mcps: ${err}`);
+    }
 
+    return mcps;
+}
+
+function parseMCPConfig(workspaceRoot: string): MCPInfo[] {
+    const allMCPs: MCPInfo[] = [];
+    const seen = new Set<string>();
+
+    const addUnique = (mcps: MCPInfo[]) => {
+        for (const m of mcps) {
+            if (!seen.has(m.name)) {
+                seen.add(m.name);
+                allMCPs.push(m);
+            }
+        }
+    };
+
+    const projectPath = path.join(workspaceRoot, '.cursor', 'mcp.json');
+    if (fs.existsSync(projectPath)) {
+        addUnique(parseMCPFromJson(projectPath, 'project .cursor/mcp.json'));
+    }
+
+    const globalPath = getGlobalMCPJsonPath();
+    if (globalPath) {
+        addUnique(parseMCPFromJson(globalPath, 'global ~/.cursor/mcp.json'));
+    }
+
+    const settingsPath = getCursorSettingsPath();
+    if (settingsPath) {
+        try {
+            const content = fs.readFileSync(settingsPath, 'utf-8');
+            const settings = JSON.parse(content);
+            if (settings.mcpServers && typeof settings.mcpServers === 'object') {
+                const tempFile = path.join(os.tmpdir(), '.cursor-shield-mcp-temp.json');
+                fs.writeFileSync(tempFile, JSON.stringify({ mcpServers: settings.mcpServers }), 'utf-8');
+                addUnique(parseMCPFromJson(tempFile, 'Cursor settings.json'));
+                try { fs.unlinkSync(tempFile); } catch { /* ignore */ }
+            }
+        } catch (err) {
+            logger.warn(MODULE, `Failed to read Cursor settings.json: ${err}`);
+        }
+    }
+
+    addUnique(scanCursorProjectsMCPS());
+
+    logger.info(MODULE, `Total MCP servers found: ${allMCPs.length}`);
+    return allMCPs;
+}
+
+function parseSkills(workspaceRoot: string): SkillInfo[] {
+    const config = vscode.workspace.getConfiguration('cursorSecurity');
+    const allowedSkills: string[] = config.get('allowedSkills') || [];
+    const skills: SkillInfo[] = [];
+    const seen = new Set<string>();
+
+    const addSkill = (name: string, description: string, skillPath: string) => {
+        if (!seen.has(name)) {
+            seen.add(name);
             skills.push({
                 name,
                 description,
-                path: skillDir,
-                isAuthorized
+                path: skillPath,
+                isAuthorized: allowedSkills.length === 0 || allowedSkills.includes(name)
             });
         }
+    };
 
-        logger.info(MODULE, `Found ${skills.length} Skill(s)`);
-        return skills;
-    } catch (err) {
-        logger.error(MODULE, `Failed to scan skills: ${err}`);
-        return [];
+    const projectSkillsDir = path.join(workspaceRoot, '.cursor', 'skills');
+    if (fs.existsSync(projectSkillsDir)) {
+        try {
+            const entries = fs.readdirSync(projectSkillsDir, { withFileTypes: true });
+
+            for (const entry of entries) {
+                if (entry.isDirectory()) {
+                    const skillDir = path.join(projectSkillsDir, entry.name);
+                    const skillJsonPath = path.join(skillDir, 'skill.json');
+                    const skillMdPath = path.join(skillDir, 'skill.md');
+
+                    let name = entry.name;
+                    let description = '';
+
+                    if (fs.existsSync(skillJsonPath)) {
+                        try {
+                            const content = fs.readFileSync(skillJsonPath, 'utf-8');
+                            const skillDef = JSON.parse(content);
+                            if (skillDef.name) { name = skillDef.name; }
+                            if (skillDef.description) { description = skillDef.description; }
+                        } catch {
+                            logger.warn(MODULE, `Failed to parse skill.json in: ${skillDir}`);
+                        }
+                    } else if (fs.existsSync(skillMdPath)) {
+                        const raw = fs.readFileSync(skillMdPath, 'utf-8');
+                        description = raw.substring(0, 120).replace(/\n/g, ' ').trim();
+                    }
+
+                    addSkill(name, description, skillDir);
+                } else if (entry.isFile() && entry.name.endsWith('.md')) {
+                    const name = entry.name.replace(/\.md$/, '');
+                    const raw = fs.readFileSync(path.join(projectSkillsDir, entry.name), 'utf-8');
+                    const description = raw.substring(0, 120).replace(/\n/g, ' ').trim();
+                    addSkill(name, description, path.join(projectSkillsDir, entry.name));
+                }
+            }
+        } catch (err) {
+            logger.error(MODULE, `Failed to scan project skills: ${err}`);
+        }
     }
+
+    const globalSkillsDir = path.join(os.homedir(), '.cursor', 'skills-cursor');
+    if (fs.existsSync(globalSkillsDir)) {
+        try {
+            const entries = fs.readdirSync(globalSkillsDir, { withFileTypes: true });
+
+            for (const entry of entries) {
+                if (!entry.isDirectory()) { continue; }
+
+                const skillDir = path.join(globalSkillsDir, entry.name);
+                const skillMdPath = path.join(skillDir, 'SKILL.md');
+
+                let name = entry.name;
+                let description = '';
+
+                if (fs.existsSync(skillMdPath)) {
+                    const raw = fs.readFileSync(skillMdPath, 'utf-8');
+                    const firstLine = raw.split('\n').find(l => l.trim().length > 0) || '';
+                    description = firstLine.replace(/^#+\s*/, '').substring(0, 120).trim();
+                    if (!description) {
+                        description = raw.substring(0, 120).replace(/\n/g, ' ').trim();
+                    }
+                }
+
+                addSkill(name, description, skillDir);
+            }
+
+            if (entries.length > 0) {
+                logger.info(MODULE, `Scanned ~/.cursor/skills-cursor/: ${entries.length} entries`);
+            }
+        } catch (err) {
+            logger.warn(MODULE, `Failed to scan ~/.cursor/skills-cursor/: ${err}`);
+        }
+    }
+
+    logger.info(MODULE, `Found ${skills.length} Skill(s)`);
+    return skills;
 }
 
 export function createStatusBarItem(): vscode.StatusBarItem {
@@ -298,11 +438,35 @@ export function registerMCPSkillMonitor(context: vscode.ExtensionContext): vscod
     mcpFileWatcher.onDidDelete(() => scanMCPSkills());
     disposables.push(mcpFileWatcher);
 
-    const skillsFileWatcher = vscode.workspace.createFileSystemWatcher('**/.cursor/skills/**/skill.json');
+    const skillsFileWatcher = vscode.workspace.createFileSystemWatcher('**/.cursor/skills/**/*');
     skillsFileWatcher.onDidChange(() => scanMCPSkills());
     skillsFileWatcher.onDidCreate(() => scanMCPSkills());
     skillsFileWatcher.onDidDelete(() => scanMCPSkills());
     disposables.push(skillsFileWatcher);
+
+    const globalMCPWatcher = vscode.workspace.createFileSystemWatcher(
+        path.join(os.homedir(), '.cursor', 'mcp.json')
+    );
+    globalMCPWatcher.onDidChange(() => scanMCPSkills());
+    globalMCPWatcher.onDidCreate(() => scanMCPSkills());
+    globalMCPWatcher.onDidDelete(() => scanMCPSkills());
+    disposables.push(globalMCPWatcher);
+
+    const cursorProjectsWatcher = vscode.workspace.createFileSystemWatcher(
+        path.join(os.homedir(), '.cursor', 'projects', '*', 'mcps', '*', 'SERVER_METADATA.json')
+    );
+    cursorProjectsWatcher.onDidChange(() => scanMCPSkills());
+    cursorProjectsWatcher.onDidCreate(() => scanMCPSkills());
+    cursorProjectsWatcher.onDidDelete(() => scanMCPSkills());
+    disposables.push(cursorProjectsWatcher);
+
+    const globalSkillsWatcher = vscode.workspace.createFileSystemWatcher(
+        path.join(os.homedir(), '.cursor', 'skills-cursor', '*', 'SKILL.md')
+    );
+    globalSkillsWatcher.onDidChange(() => scanMCPSkills());
+    globalSkillsWatcher.onDidCreate(() => scanMCPSkills());
+    globalSkillsWatcher.onDidDelete(() => scanMCPSkills());
+    disposables.push(globalSkillsWatcher);
 
     const refreshCommand = vscode.commands.registerCommand(
         'cursorSecurity._refreshMCPSkill',

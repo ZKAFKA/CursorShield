@@ -157,6 +157,28 @@
           "type": "boolean",
           "default": true,
           "description": "是否允许自动恢复安全配置"
+        },
+        "cursorSecurity.reportServerUrl": {
+          "type": "string",
+          "default": "",
+          "description": "监控端服务器地址，如 http://monitor.company.com:3000"
+        },
+        "cursorSecurity.reportToken": {
+          "type": "string",
+          "default": "",
+          "description": "上报认证 Token，需与服务器端一致"
+        },
+        "cursorSecurity.deviceName": {
+          "type": "string",
+          "default": "",
+          "description": "设备显示名称（留空则用系统 hostname）"
+        },
+        "cursorSecurity.reportInterval": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 5000,
+          "maximum": 300000,
+          "description": "上报间隔（毫秒），默认 30000"
         }
       }
     }
