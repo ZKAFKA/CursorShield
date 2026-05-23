@@ -1,8 +1,6 @@
 # Cursor Shield — 企业级 Cursor 安全监控插件
 
-> 一款针对企业使用 Cursor AI开发场景下的安全管理插件，通过客户端监控和管理台下发实现对员工AI使用的安全防护。覆盖账号监控、Git 审计、MCP/Skill 扫描、敏感信息检测和防绕过机制五大核心能力。  
->
-> A security management plugin for enterprise use of Cursor AI in development scenarios, providing security protection for employees' AI usage through client monitoring and management console deployment. It covers five core capabilities: account monitoring
+> 一款针对企业使用 Cursor AI开发场景下的安全管理插件，通过客户端监控和管理台下发实现对员工AI使用的安全防护。覆盖账号监控、Git 审计、MCP/Skill 扫描和敏感信息检测四大核心能力。  
 
 ***
 
